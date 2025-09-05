@@ -1,131 +1,56 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/account.dart';
 
 class ApiService {
-  // Тимчасово використовуємо мок дані
-  List<Account> _accounts = [];
-  bool _useMockData = true; // Прапорець для перемикання між мок і реальними даними
+  final String baseUrl; // приклад: "http://192.168.1.50:3000"
 
-  ApiService() {
-    _initMockData();
-  }
+  ApiService(this.baseUrl);
 
-  void _initMockData() {
-    _accounts = [
-      Account(
-        id: '1',
-        accountNumber: '001122',
-        rozporiadNumber: '3444',
-        legalName: 'ТОВ "Приклад 1"',
-        edrpou: '12345678',
-        subordination: 'Міністерство А',
-      ),
-      Account(
-        id: '2',
-        accountNumber: '001123',
-        rozporiadNumber: '3444',
-        legalName: 'ТОВ "Приклад 2"',
-        edrpou: '87654321',
-        subordination: 'Міністерство Б',
-      ),
-      Account(
-        id: '3',
-        accountNumber: '001124',
-        rozporiadNumber: '3444',
-        legalName: 'ТОВ "Приклад 3"',
-        edrpou: '11111111',
-        subordination: 'Міністерство В',
-      ),
-    ];
-  }
-
+  // Отримати всі рахунки
   Future<List<Account>> fetchAccounts() async {
-    if (_useMockData) {
-      return _fetchAccountsMock();
+    final res = await http.get(Uri.parse('$baseUrl/accounts'));
+    if (res.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(res.body);
+      return data.map((e) => Account.fromJson(e)).toList();
     } else {
-      return _fetchAccountsReal();
+      throw Exception('Помилка при завантаженні рахунків');
     }
   }
 
-  Future<List<Account>> _fetchAccountsMock() async {
-    await Future.delayed(Duration(seconds: 1));
-    return List.from(_accounts);
-  }
-
+  // Додати рахунок
   Future<Account> addAccount(Account account) async {
-    if (_useMockData) {
-      return _addAccountMock(account);
-    } else {
-      return _addAccountReal(account);
-    }
-  }
-
-  Future<Account> _addAccountMock(Account account) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final newAccount = account.copyWith(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final res = await http.post(
+      Uri.parse('$baseUrl/accounts'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(account.toJson()),
     );
-    _accounts.add(newAccount);
-    return newAccount;
+    if (res.statusCode == 201) {
+      return Account.fromJson(jsonDecode(res.body));
+    } else {
+      throw Exception('Помилка при створенні рахунку');
+    }
   }
 
+  // Оновити рахунок
   Future<Account> updateAccount(Account account) async {
-    if (_useMockData) {
-      return _updateAccountMock(account);
+    final res = await http.put(
+      Uri.parse('$baseUrl/accounts/${account.id}'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(account.toJson()),
+    );
+    if (res.statusCode == 200) {
+      return Account.fromJson(jsonDecode(res.body));
     } else {
-      return _updateAccountReal(account);
+      throw Exception('Помилка при оновленні рахунку');
     }
   }
 
-  Future<Account> _updateAccountMock(Account account) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final index = _accounts.indexWhere((a) => a.id == account.id);
-    if (index != -1) {
-      _accounts[index] = account;
-      return account;
-    }
-    throw Exception('Рахунок не знайдено');
-  }
-
+  // Видалити рахунок
   Future<void> deleteAccount(String id) async {
-    if (_useMockData) {
-      return _deleteAccountMock(id);
-    } else {
-      return _deleteAccountReal(id);
+    final res = await http.delete(Uri.parse('$baseUrl/accounts/$id'));
+    if (res.statusCode != 204) {
+      throw Exception('Помилка при видаленні рахунку');
     }
   }
-
-  Future<void> _deleteAccountMock(String id) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    _accounts.removeWhere((account) => account.id == id);
-  }
-
-  // Методи для реального бекенду (поки заглушки)
-  Future<List<Account>> _fetchAccountsReal() async {
-    // Тут буде реальна реалізація, коли налаштуємо бекенд
-    await Future.delayed(Duration(seconds: 2));
-    throw Exception('Реальний бекенд ще не налаштовано. Використовуються мок дані.');
-  }
-
-  Future<Account> _addAccountReal(Account account) async {
-    await Future.delayed(Duration(seconds: 1));
-    throw Exception('Реальний бекенд ще не налаштовано. Використовуються мок дані.');
-  }
-
-  Future<Account> _updateAccountReal(Account account) async {
-    await Future.delayed(Duration(seconds: 1));
-    throw Exception('Реальний бекенд ще не налаштовано. Використовуються мок дані.');
-  }
-
-  Future<void> _deleteAccountReal(String id) async {
-    await Future.delayed(Duration(seconds: 1));
-    throw Exception('Реальний бекенд ще не налаштовано. Використовуються мок дані.');
-  }
-
-  // Метод для перемикання між мок і реальними даними
-  void toggleUseMockData(bool useMock) {
-    _useMockData = useMock;
-  }
-
-  // Геттер для перевірки поточного режиму
-  bool get isUsingMockData => _useMockData;
 }

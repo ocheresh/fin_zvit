@@ -4,31 +4,32 @@ import '../models/account.dart';
 import 'account_edit_screen.dart';
 
 class AccountListScreen extends StatefulWidget {
+  const AccountListScreen({super.key});
+
   @override
-  _AccountListScreenState createState() => _AccountListScreenState();
+  State<AccountListScreen> createState() => _AccountListScreenState();
 }
 
 class _AccountListScreenState extends State<AccountListScreen> {
-  late Future<List<Account>> futureAccounts;
-  final ApiService _apiService = ApiService();
+  late Future<List<Account>> _futureAccounts;
+  final ApiService _apiService = ApiService("http://localhost:3000");
   List<Account> _filteredAccounts = [];
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
-  // Фільтри
   final Map<String, bool> _filterOptions = {
     'accountNumber': true,
     'rozporiadNumber': true,
     'legalName': true,
     'edrpou': true,
     'subordination': true,
-    'additionalInfo': true, // Додано фільтр для додаткової інформації
+    'additionalInfo': true,
   };
 
   @override
   void initState() {
     super.initState();
-    _refreshAccounts();
+    _loadAccounts();
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -38,6 +39,15 @@ class _AccountListScreenState extends State<AccountListScreen> {
     super.dispose();
   }
 
+  void _loadAccounts() {
+    setState(() {
+      _futureAccounts = _apiService.fetchAccounts().then((accounts) {
+        _filteredAccounts = accounts;
+        return accounts;
+      });
+    });
+  }
+
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text.toLowerCase();
@@ -45,64 +55,156 @@ class _AccountListScreenState extends State<AccountListScreen> {
     });
   }
 
-  void _refreshAccounts() {
-    setState(() {
-      futureAccounts = _apiService.fetchAccounts().then((accounts) {
-        _filteredAccounts = accounts;
-        return accounts;
+  void _applyFilters() {
+    _futureAccounts.then((accounts) {
+      setState(() {
+        if (_searchQuery.isEmpty) {
+          _filteredAccounts = accounts;
+        } else {
+          _filteredAccounts = accounts.where((account) {
+            bool matches = false;
+            if (_filterOptions['accountNumber'] == true &&
+                account.accountNumber.toLowerCase().contains(_searchQuery)) {
+              matches = true;
+            }
+            if (_filterOptions['rozporiadNumber'] == true &&
+                account.rozporiadNumber.toLowerCase().contains(_searchQuery)) {
+              matches = true;
+            }
+            if (_filterOptions['legalName'] == true &&
+                account.legalName.toLowerCase().contains(_searchQuery)) {
+              matches = true;
+            }
+            if (_filterOptions['edrpou'] == true &&
+                account.edrpou.toLowerCase().contains(_searchQuery)) {
+              matches = true;
+            }
+            if (_filterOptions['subordination'] == true &&
+                account.subordination.toLowerCase().contains(_searchQuery)) {
+              matches = true;
+            }
+            if (_filterOptions['additionalInfo'] == true &&
+                account.additionalInfo.toLowerCase().contains(_searchQuery)) {
+              matches = true;
+            }
+            return matches;
+          }).toList();
+        }
       });
     });
   }
 
-  void _applyFilters() {
-    if (_searchQuery.isEmpty) {
-      futureAccounts.then((accounts) {
-        setState(() {
-          _filteredAccounts = accounts;
-        });
-      });
-      return;
+  void _clearSearch() {
+    _searchController.clear();
+    _onSearchChanged();
+  }
+
+  Future<void> _addAccount() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AccountEditScreen()),
+    );
+    if (result != null && result is Account) {
+      await _apiService.addAccount(result);
+      _loadAccounts();
+      _showSnackBar('Рахунок успішно додано');
     }
+  }
 
-    futureAccounts.then((accounts) {
-      setState(() {
-        _filteredAccounts = accounts.where((account) {
-          bool matches = false;
+  Future<void> _editAccount(Account account) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            AccountEditScreen(account: account, isEditing: true),
+      ),
+    );
+    if (result != null && result is Account) {
+      await _apiService.updateAccount(result);
+      _loadAccounts();
+      _showSnackBar('Рахунок успішно оновлено');
+    }
+  }
 
-          if (_filterOptions['accountNumber'] == true) {
-            matches =
-                matches ||
-                account.accountNumber.toLowerCase().contains(_searchQuery);
-          }
-          if (_filterOptions['rozporiadNumber'] == true) {
-            matches =
-                matches ||
-                account.rozporiadNumber.toLowerCase().contains(_searchQuery);
-          }
-          if (_filterOptions['legalName'] == true) {
-            matches =
-                matches ||
-                account.legalName.toLowerCase().contains(_searchQuery);
-          }
-          if (_filterOptions['edrpou'] == true) {
-            matches =
-                matches || account.edrpou.toLowerCase().contains(_searchQuery);
-          }
-          if (_filterOptions['subordination'] == true) {
-            matches =
-                matches ||
-                account.subordination.toLowerCase().contains(_searchQuery);
-          }
-          if (_filterOptions['additionalInfo'] == true) {
-            matches =
-                matches ||
-                account.additionalInfo.toLowerCase().contains(_searchQuery);
-          }
+  Future<void> _deleteAccount(Account account) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Видалити рахунок'),
+        content: Text(
+          'Ви впевнені, що хочете видалити рахунок ${account.accountNumber}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Скасувати'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Видалити', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
 
-          return matches;
-        }).toList();
-      });
-    });
+    if (confirmed == true) {
+      await _apiService.deleteAccount(account.id);
+      _loadAccounts();
+      _showSnackBar('Рахунок успішно видалено');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _showAccountDetails(Account account) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Детальна інформація'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow('Особовий рахунок', account.accountNumber),
+              _buildDetailRow('Розпорядний номер', account.rozporiadNumber),
+              _buildDetailRow('Найменування', account.legalName),
+              _buildDetailRow('ЄДРПОУ', account.edrpou),
+              _buildDetailRow('Підпорядкованість', account.subordination),
+              if (account.additionalInfo.isNotEmpty)
+                _buildDetailRow('Додаткова інформація', account.additionalInfo),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Закрити'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+          children: [
+            TextSpan(
+              text: "$label: ",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showFilterDialog() {
@@ -110,83 +212,36 @@ class _AccountListScreenState extends State<AccountListScreen> {
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Налаштування фільтрів'),
+              title: const Text('Налаштування фільтрів'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CheckboxListTile(
-                      title: Text('Особовий рахунок'),
-                      value: _filterOptions['accountNumber'],
+                  children: _filterOptions.keys.map((key) {
+                    return CheckboxListTile(
+                      title: Text(key),
+                      value: _filterOptions[key],
                       onChanged: (value) {
-                        setState(() {
-                          _filterOptions['accountNumber'] = value!;
+                        setDialogState(() {
+                          _filterOptions[key] = value!;
                         });
                       },
-                    ),
-                    CheckboxListTile(
-                      title: Text('Розпорядний номер'),
-                      value: _filterOptions['rozporiadNumber'],
-                      onChanged: (value) {
-                        setState(() {
-                          _filterOptions['rozporiadNumber'] = value!;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: Text('Найменування'),
-                      value: _filterOptions['legalName'],
-                      onChanged: (value) {
-                        setState(() {
-                          _filterOptions['legalName'] = value!;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: Text('ЄДРПОУ'),
-                      value: _filterOptions['edrpou'],
-                      onChanged: (value) {
-                        setState(() {
-                          _filterOptions['edrpou'] = value!;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: Text('Підпорорядкованість'),
-                      value: _filterOptions['subordination'],
-                      onChanged: (value) {
-                        setState(() {
-                          _filterOptions['subordination'] = value!;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: Text('Додаткова інформація'),
-                      value: _filterOptions['additionalInfo'],
-                      onChanged: (value) {
-                        setState(() {
-                          _filterOptions['additionalInfo'] = value!;
-                        });
-                      },
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text('Скасувати'),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Скасувати'),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     _applyFilters();
                   },
-                  child: Text('Застосувати'),
+                  child: const Text('Застосувати'),
                 ),
               ],
             );
@@ -196,318 +251,136 @@ class _AccountListScreenState extends State<AccountListScreen> {
     );
   }
 
-  void _clearSearch() {
-    _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-      _applyFilters();
-    });
-  }
-
-  void _addAccount() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AccountEditScreen()),
-    );
-
-    if (result != null && result is Account) {
-      await _apiService.addAccount(result);
-      _refreshAccounts();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Рахунок успішно додано')));
-    }
-  }
-
-  void _editAccount(Account account) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            AccountEditScreen(account: account, isEditing: true),
-      ),
-    );
-
-    if (result != null && result is Account) {
-      await _apiService.updateAccount(result);
-      _refreshAccounts();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Рахунок успішно оновлено')));
-    }
-  }
-
-  void _deleteAccount(Account account) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Видалити рахунок'),
-        content: Text(
-          'Ви впевнені, що хочете видалити рахунок ${account.accountNumber}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Скасувати'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Видалити', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await _apiService.deleteAccount(account.id);
-      _refreshAccounts();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Рахунок успішно видалено')));
-    }
-  }
-
-  void _showAccountDetails(Account account) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Детальна інформація'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow('Особовий рахунок:', account.accountNumber),
-              _buildDetailRow('Розпорядний номер:', account.rozporiadNumber),
-              _buildDetailRow('Найменування:', account.legalName),
-              _buildDetailRow('ЄДРПОУ:', account.edrpou),
-              _buildDetailRow('Підпорядкованість:', account.subordination),
-              if (account.additionalInfo.isNotEmpty)
-                _buildDetailRow(
-                  'Додаткова інформація:',
-                  account.additionalInfo,
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Закрити'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
-          children: [
-            TextSpan(
-              text: '$label ',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            TextSpan(text: value),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Особові рахунки'),
+        title: const Text('Особові рахунки'),
         backgroundColor: Colors.blue[700],
         foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
-            tooltip: 'Фільтри пошуку',
           ),
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _refreshAccounts,
-            tooltip: 'Оновити',
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAccounts),
         ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
                 labelText: 'Пошук рахунків',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear),
+                        icon: const Icon(Icons.clear),
                         onPressed: _clearSearch,
                       )
                     : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                hintText: 'Введіть текст для пошуку...',
               ),
             ),
           ),
-          if (_searchQuery.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Text(
-                    'Знайдено: ${_filteredAccounts.length} рахунків',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  ),
-                  Spacer(),
-                  TextButton(
-                    onPressed: _clearSearch,
-                    child: Text('Очистити пошук'),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: FutureBuilder<List<Account>>(
-              future: futureAccounts,
+              future: _futureAccounts,
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   final accounts = _searchQuery.isEmpty
                       ? snapshot.data!
                       : _filteredAccounts;
-
                   if (accounts.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            _searchQuery.isEmpty
-                                ? 'Немає рахунків'
-                                : 'Рахунків не знайдено',
-                            style: TextStyle(fontSize: 18),
-                          ),
-                          if (_searchQuery.isNotEmpty)
-                            TextButton(
-                              onPressed: _clearSearch,
-                              child: Text('Очистити пошук'),
-                            ),
-                        ],
-                      ),
-                    );
+                    return const Center(child: Text("Рахунків не знайдено"));
                   }
-
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Особовий рахунок')),
-                        DataColumn(label: Text('Розпорядний номер')),
-                        DataColumn(label: Text('Найменування')),
-                        DataColumn(label: Text('ЄДРПОУ')),
-                        DataColumn(label: Text('Підпорядкованість')),
-                        DataColumn(label: Text('Додаткова інформація')),
-                        DataColumn(label: Text('Дії')),
-                      ],
-                      rows: accounts.map((account) {
-                        return DataRow(
-                          onLongPress: () => _showAccountDetails(account),
-                          cells: [
-                            DataCell(
-                              Text(account.accountNumber),
-                              onTap: () => _showAccountDetails(account),
-                            ),
-                            DataCell(
-                              Text(account.rozporiadNumber),
-                              onTap: () => _showAccountDetails(account),
-                            ),
-                            DataCell(
-                              Text(account.legalName),
-                              onTap: () => _showAccountDetails(account),
-                            ),
-                            DataCell(
-                              Text(account.edrpou),
-                              onTap: () => _showAccountDetails(account),
-                            ),
-                            DataCell(
-                              Text(account.subordination),
-                              onTap: () => _showAccountDetails(account),
-                            ),
-                            DataCell(
-                              Container(
-                                width: 150, // Фіксована ширина
-                                child: Text(
-                                  account.additionalInfo.isNotEmpty
-                                      ? account.additionalInfo
-                                      : '-',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false,
-                                ),
-                              ),
-                              onTap: () => _showAccountDetails(account),
-                            ),
-                            DataCell(
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.visibility,
-                                      size: 20,
-                                      color: Colors.blue,
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minWidth: constraints.maxWidth,
+                          ),
+                          child: DataTable(
+                            columnSpacing: 20,
+                            columns: const [
+                              DataColumn(label: Text('Особовий рахунок')),
+                              DataColumn(label: Text('Розпорядний номер')),
+                              DataColumn(label: Text('Найменування')),
+                              DataColumn(label: Text('ЄДРПОУ')),
+                              DataColumn(label: Text('Підпорядкованість')),
+                              DataColumn(label: Text('Додаткова інформація')),
+                              DataColumn(label: Text('Дії')),
+                            ],
+                            rows: accounts.map((account) {
+                              return DataRow(
+                                onLongPress: () => _showAccountDetails(account),
+                                cells: [
+                                  DataCell(Text(account.accountNumber)),
+                                  DataCell(Text(account.rozporiadNumber)),
+                                  DataCell(Text(account.legalName)),
+                                  DataCell(Text(account.edrpou)),
+                                  DataCell(Text(account.subordination)),
+                                  DataCell(
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 150,
+                                      ),
+                                      child: Text(
+                                        account.additionalInfo.isNotEmpty
+                                            ? account.additionalInfo
+                                            : "-",
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    onPressed: () =>
-                                        _showAccountDetails(account),
-                                    tooltip: 'Переглянути деталі',
                                   ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.edit,
-                                      size: 20,
-                                      color: Colors.green,
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.visibility,
+                                            color: Colors.blue,
+                                          ),
+                                          onPressed: () =>
+                                              _showAccountDetails(account),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.green,
+                                          ),
+                                          onPressed: () =>
+                                              _editAccount(account),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              _deleteAccount(account),
+                                        ),
+                                      ],
                                     ),
-                                    onPressed: () => _editAccount(account),
-                                    tooltip: 'Редагувати',
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.delete,
-                                      size: 20,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () => _deleteAccount(account),
-                                    tooltip: 'Видалити',
                                   ),
                                 ],
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Помилка: ${snapshot.error}'));
+                  return Center(child: Text("Помилка: ${snapshot.error}"));
                 }
-                return Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               },
             ),
           ),
@@ -515,9 +388,8 @@ class _AccountListScreenState extends State<AccountListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addAccount,
-        child: Icon(Icons.add),
         backgroundColor: Colors.blue[700],
-        tooltip: 'Додати рахунок',
+        child: const Icon(Icons.add),
       ),
     );
   }

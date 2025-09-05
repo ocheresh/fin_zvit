@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'account_list_screen.dart';
+import 'reference_screen.dart';
+import 'selection_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -8,33 +10,29 @@ class MainMenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Кошторис ГУЗтК ГШ ЗСУ'),
+        title: Text('Головне меню'),
         backgroundColor: Colors.blue[700],
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.account_balance,
-              size: 80,
-              color: Colors.blue[700],
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Головне меню',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[700],
-              ),
-            ),
+            // Icon(Icons.account_balance, size: 80, color: Colors.blue[700]),
+            // SizedBox(height: 24),
+            // Text(
+            //   'Головне меню',
+            //   style: TextStyle(
+            //     fontSize: 28,
+            //     fontWeight: FontWeight.bold,
+            //     color: Colors.blue[700],
+            //   ),
+            // ),
             SizedBox(height: 40),
             _buildMenuButton(
               context,
               icon: Icons.account_balance_wallet,
               title: 'Особові рахунки',
-              description: 'Управління фінансовими рахунками',
+              description: 'Управління рахунками',
               onTap: () {
                 Navigator.push(
                   context,
@@ -45,19 +43,25 @@ class MainMenuScreen extends StatelessWidget {
             _buildMenuButton(
               context,
               icon: Icons.bar_chart,
-              title: 'Звіти та аналітика',
-              description: 'Перегляд фінансових звітів',
+              title: 'Кошторис та план асигнувань',
+              description: 'Перегляд та внесення змін',
               onTap: () {
-                _showComingSoon(context, 'Звіти та аналітика');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SelectionScreen()),
+                );
               },
             ),
             _buildMenuButton(
               context,
-              icon: Icons.settings,
-              title: 'Налаштування',
-              description: 'Налаштування системи',
+              icon: Icons.bookmark_add_rounded,
+              title: 'Довідники',
+              description: 'КПКВ, ФОНД, КЕКВ .....',
               onTap: () {
-                _showComingSoon(context, 'Налаштування');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ReferenceScreen()),
+                );
               },
             ),
             _buildMenuButton(
@@ -89,10 +93,7 @@ class MainMenuScreen extends StatelessWidget {
         leading: Icon(icon, size: 32, color: Colors.blue[700]),
         title: Text(
           title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         subtitle: Text(description),
         trailing: Icon(Icons.arrow_forward_ios, size: 16),
@@ -107,7 +108,7 @@ class MainMenuScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('$featureName'),
+          title: Text(featureName),
           content: Text('Цей розділ знаходиться в розробці.'),
           actions: [
             TextButton(
