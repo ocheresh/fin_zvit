@@ -1,0 +1,50 @@
+[
+  {
+    "id": "e48891da-fc18-4457-b79d-f0d230c7bcc9",
+    "accountId": "50070 - 13362",
+    "kekvId": "2210.050",
+    "months": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      5000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "total": 5000,
+    "currentMonth": 0,
+    "additionalInfo": "",
+    "createdAt": "2025-09-08T13:26:32.689Z",
+    "updatedAt": "2025-09-08T13:26:32.689Z"
+  },
+  {
+    "id": "657480d1-7a46-4025-a4b0-b63bfc4a7c0c",
+    "accountId": "50070 - 13362",
+    "kekvId": "3110.030",
+    "months": [
+      0,
+      0,
+      0,
+      0,
+      60000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "total": 60000,
+    "currentMonth": 0,
+    "additionalInfo": "",
+    "createdAt": "2025-09-08T13:27:12.792Z",
+    "updatedAt": "2025-09-08T13:27:12.792Z"
+  }
+]

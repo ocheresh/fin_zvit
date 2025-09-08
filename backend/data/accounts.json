@@ -1,11 +1,35 @@
 [
   {
-    "id": "65f735a6-0049-4164-8f95-1b7ffa2338e5",
-    "accountNumber": "001126",
-    "legalName": "ТОВ Новий",
-    "edrpou": "12345678",
-    "subordination": "Міністерство Д",
-    "createdAt": "2025-08-31T07:42:05.939Z",
-    "updatedAt": "2025-08-31T07:42:05.939Z"
+    "id": "46e07c12-0b23-48a3-90bc-35c8b3bc1ab1",
+    "accountNumber": "50070",
+    "legalName": "ВІТІ",
+    "edrpou": "24978555",
+    "subordination": "КСВ1",
+    "createdAt": "2025-09-05T10:53:43.213Z",
+    "updatedAt": "2025-09-05T12:46:55.932Z",
+    "rozporiadNumber": "13362",
+    "additionalInfo": "Ldsfsdfs"
+  },
+  {
+    "id": "2a115cdd-c98e-4b83-afa4-d2489ae3c3d1",
+    "accountNumber": "50001",
+    "legalName": "Міністерство оборони України",
+    "edrpou": "24900000",
+    "subordination": "МОУ",
+    "createdAt": "2025-09-05T10:58:26.398Z",
+    "updatedAt": "2025-09-05T11:30:24.749Z",
+    "rozporiadNumber": "4565",
+    "additionalInfo": ""
+  },
+  {
+    "id": "09ac5fd7-7dc2-4c6d-b101-4c1c135f4965",
+    "rozporiadNumber": "12345",
+    "accountNumber": "444444",
+    "legalName": "fffdfd",
+    "edrpou": "23234234",
+    "subordination": "vje",
+    "additionalInfo": "",
+    "createdAt": "2025-09-05T11:28:05.535Z",
+    "updatedAt": "2025-09-05T11:28:05.535Z"
   }
 ]
