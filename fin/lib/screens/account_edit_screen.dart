@@ -24,17 +24,24 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   void initState() {
     super.initState();
     _accountNumberController = TextEditingController(
-        text: widget.isEditing ? widget.account?.accountNumber ?? '' : '');
+      text: widget.isEditing ? widget.account?.accountNumber ?? '' : '',
+    );
     _rozporiadNumberController = TextEditingController(
-        text: widget.isEditing ? widget.account?.rozporiadNumber ?? '' : '');
+      text: widget.isEditing ? widget.account?.rozporiadNumber ?? '' : '',
+    );
     _legalNameController = TextEditingController(
-        text: widget.isEditing ? widget.account?.legalName ?? '' : '');
+      text: widget.isEditing ? widget.account?.legalName ?? '' : '',
+    );
     _edrpouController = TextEditingController(
-        text: widget.isEditing ? widget.account?.edrpou ?? '' : '');
+      text: widget.isEditing ? widget.account?.edrpou ?? '' : '',
+    );
     _subordinationController = TextEditingController(
-        text: widget.isEditing ? widget.account?.subordination ?? '' : '');
-    _additionalInfoController = TextEditingController( // Ініціалізовано
-        text: widget.isEditing ? widget.account?.additionalInfo ?? '' : '');
+      text: widget.isEditing ? widget.account?.subordination ?? '' : '',
+    );
+    _additionalInfoController = TextEditingController(
+      // Ініціалізовано
+      text: widget.isEditing ? widget.account?.additionalInfo ?? '' : '',
+    );
   }
 
   @override
@@ -247,13 +254,16 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   void _saveAccount() {
     if (_formKey.currentState!.validate()) {
       final account = Account(
-        id: widget.isEditing ? widget.account!.id : DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.isEditing
+            ? widget.account!.id
+            : DateTime.now().millisecondsSinceEpoch.toString(),
         rozporiadNumber: _rozporiadNumberController.text,
         accountNumber: _accountNumberController.text,
         legalName: _legalNameController.text,
         edrpou: _edrpouController.text,
         subordination: _subordinationController.text,
-        additionalInfo: _additionalInfoController.text, // Додано передачу параметра
+        additionalInfo:
+            _additionalInfoController.text, // Додано передачу параметра
       );
 
       Navigator.pop(context, account);

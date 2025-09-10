@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import '../services/reference_api_service.dart';
-import '../models/reference_item.dart';
+import '../../services/reference_api_service.dart';
+import '../../models/reference_item.dart';
+import 'plan_budget_tabs_screen.dart';
 
-class SelectionScreen extends StatefulWidget {
-  const SelectionScreen({super.key});
+class PlanSelectionScreen extends StatefulWidget {
+  const PlanSelectionScreen({super.key});
 
   @override
-  State<SelectionScreen> createState() => _SelectionScreenState();
+  State<PlanSelectionScreen> createState() => _PlanSelectionScreenState();
 }
 
-class _SelectionScreenState extends State<SelectionScreen> {
+class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
   final ReferenceApiService apiService = ReferenceApiService(
     "http://localhost:3000",
   );
@@ -121,10 +122,13 @@ class _SelectionScreenState extends State<SelectionScreen> {
                 onPressed: selectedKpkv != null && selectedFund != null
                     ? () {
                         // Дія після вибору
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Обрано рік: $selectedYear, КПКВ: ${selectedKpkv!.name}, Фонд: ${selectedFund!.name}',
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PlanBudgetScreen(
+                              year: selectedYear,
+                              kpkv: selectedKpkv!,
+                              fund: selectedFund!,
                             ),
                           ),
                         );

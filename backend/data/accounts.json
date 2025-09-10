@@ -1,16 +1,5 @@
 [
   {
-    "id": "46e07c12-0b23-48a3-90bc-35c8b3bc1ab1",
-    "accountNumber": "50070",
-    "legalName": "ВІТІ",
-    "edrpou": "24978555",
-    "subordination": "КСВ1",
-    "createdAt": "2025-09-05T10:53:43.213Z",
-    "updatedAt": "2025-09-05T12:46:55.932Z",
-    "rozporiadNumber": "13362",
-    "additionalInfo": "Ldsfsdfs"
-  },
-  {
     "id": "2a115cdd-c98e-4b83-afa4-d2489ae3c3d1",
     "accountNumber": "50001",
     "legalName": "Міністерство оборони України",
@@ -18,18 +7,43 @@
     "subordination": "МОУ",
     "createdAt": "2025-09-05T10:58:26.398Z",
     "updatedAt": "2025-09-05T11:30:24.749Z",
-    "rozporiadNumber": "4565",
+    "rozporiadNumber": "18611",
     "additionalInfo": ""
   },
   {
-    "id": "09ac5fd7-7dc2-4c6d-b101-4c1c135f4965",
-    "rozporiadNumber": "12345",
-    "accountNumber": "444444",
-    "legalName": "fffdfd",
-    "edrpou": "23234234",
-    "subordination": "vje",
-    "additionalInfo": "",
-    "createdAt": "2025-09-05T11:28:05.535Z",
-    "updatedAt": "2025-09-05T11:28:05.535Z"
+    "id": "1757507348635",
+    "rozporiadNumber": "16140",
+    "accountNumber": "53001",
+    "legalName": "Командування СВ ЗСУ (в/ч А0105)",
+    "edrpou": "22991037",
+    "subordination": "КСВ",
+    "additionalInfo": ""
+  },
+  {
+    "id": "1757508585425",
+    "rozporiadNumber": "15983",
+    "accountNumber": "50348",
+    "legalName": "Центральний науково-дослідний інститут Збройних Сил України",
+    "edrpou": "00000000",
+    "subordination": "Інше",
+    "additionalInfo": ""
+  },
+  {
+    "id": "1757508689033",
+    "rozporiadNumber": "03947",
+    "accountNumber": "50105",
+    "legalName": "Військова частина А2791",
+    "edrpou": "00000000",
+    "subordination": "Інше",
+    "additionalInfo": ""
+  },
+  {
+    "id": "1757508747431",
+    "rozporiadNumber": "02003",
+    "accountNumber": "56001",
+    "legalName": "Командування ПС ЗСУ (в/ч А0215)",
+    "edrpou": "00000000",
+    "subordination": "ПС",
+    "additionalInfo": ""
   }
 ]

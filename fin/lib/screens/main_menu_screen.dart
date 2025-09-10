@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'account_list_screen.dart';
 import 'reference_screen.dart';
-import 'selection_screen.dart';
+import 'prop/prop_selection_screen.dart';
+import 'plan/plan_selection_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -30,6 +31,34 @@ class MainMenuScreen extends StatelessWidget {
             SizedBox(height: 40),
             _buildMenuButton(
               context,
+              icon: Icons.bar_chart,
+              title: 'Кошторис, план асигнувань та взяті бюджетні зобовязання',
+              description: 'Перегляд інформації',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PlanSelectionScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildMenuButton(
+              context,
+              icon: Icons.queue_play_next_sharp,
+              title: 'Пропозицію по розподілу та кошторису',
+              description: 'Реєстр змін',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PropSelectionScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildMenuButton(
+              context,
               icon: Icons.account_balance_wallet,
               title: 'Особові рахунки',
               description: 'Управління рахунками',
@@ -37,18 +66,6 @@ class MainMenuScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => AccountListScreen()),
-                );
-              },
-            ),
-            _buildMenuButton(
-              context,
-              icon: Icons.bar_chart,
-              title: 'Кошторис та план асигнувань',
-              description: 'Перегляд та внесення змін',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SelectionScreen()),
                 );
               },
             ),
@@ -62,15 +79,6 @@ class MainMenuScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (context) => ReferenceScreen()),
                 );
-              },
-            ),
-            _buildMenuButton(
-              context,
-              icon: Icons.help,
-              title: 'Довідка',
-              description: 'Інформація про систему',
-              onTap: () {
-                _showComingSoon(context, 'Довідка');
               },
             ),
           ],
