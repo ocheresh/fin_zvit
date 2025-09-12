@@ -5,17 +5,21 @@ import '../../models/account.dart';
 import '../../services/prop_plan_assign_service.dart';
 import '../../services/api_service.dart';
 import '../../services/reference_api_service.dart';
+import 'dart:convert';
 
 class PropPlanAssignTab extends StatefulWidget {
   final int year;
   final ReferenceItem kpkv;
   final ReferenceItem fund;
 
-  const PropPlanAssignTab({
+  final VoidCallback? onPropozCompleted;
+
+  PropPlanAssignTab({
     super.key,
     required this.year,
     required this.kpkv,
     required this.fund,
+    this.onPropozCompleted,
   });
 
   @override
@@ -283,7 +287,10 @@ class _PropPlanAssignTabState extends State<PropPlanAssignTab> {
     }
   }
 
+  bool _isProcessing = false; // додати у _PropPlanAssignTabState
+
   Future<void> _addPropoz() async {
+    if (_isProcessing) return;
     final selectedRows = data.where((row) => row.isSelected).toList();
     if (selectedRows.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -295,12 +302,13 @@ class _PropPlanAssignTabState extends State<PropPlanAssignTab> {
     }
 
     int newNumber;
+    String newNumberStr;
+
     try {
-      // Отримати останню пропозицію з бекенду
       final lastPropoz = await apiService.getLastPropoz();
-      final lastNumber =
-          lastPropoz?['number'] ?? 0; // якщо немає записів, беремо 0
+      final lastNumber = lastPropoz?['number'] ?? 0;
       newNumber = lastNumber + 1;
+      newNumberStr = newNumber.toString();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Помилка отримання останньої пропозиції: $e')),
@@ -308,7 +316,7 @@ class _PropPlanAssignTabState extends State<PropPlanAssignTab> {
       return;
     }
 
-    final TextEditingController noteController = TextEditingController();
+    final noteController = TextEditingController();
 
     final note = await showDialog<String>(
       context: context,
@@ -325,7 +333,7 @@ class _PropPlanAssignTabState extends State<PropPlanAssignTab> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Номер пропозиції: $newNumber',
+                'Номер пропозиції: $newNumberStr',
                 style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 12),
@@ -358,23 +366,67 @@ class _PropPlanAssignTabState extends State<PropPlanAssignTab> {
       },
     );
 
-    if (note != null) {
-      try {
-        // Лише після підтвердження користувачем записуємо на бекенд
-        final savedPropoz = await apiService.addPropoz(newNumber, note);
+    if (note == null) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Пропозиція №$newNumber проведена. ${note.isNotEmpty ? "Примітка: $note" : ""}',
-            ),
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Помилка збереження: $e')));
+    setState(() => _isProcessing = true);
+
+    try {
+      await apiService.addPropoz(
+        newNumber,
+        note,
+        widget.kpkv.name,
+        widget.fund.name,
+      );
+
+      // ⚡ Перетворюємо всі рядки у чисті Map перед відправкою
+      final items = selectedRows
+          .map(
+            (row) =>
+                jsonDecode(jsonEncode(row.toJson())) as Map<String, dynamic>,
+          )
+          .toList();
+
+      await apiService.addResPropoz(
+        items,
+        widget.year,
+        widget.kpkv.name,
+        widget.fund.name,
+        newNumberStr,
+      );
+
+      for (var row in selectedRows) {
+        if (row.id != null) {
+          await service.deletePlan(
+            widget.year,
+            widget.kpkv.name,
+            widget.fund.name,
+            row.id!,
+          );
+        }
       }
+
+      setState(() {
+        data.removeWhere((row) => selectedRows.contains(row));
+        _allSelected = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Пропозиція №$newNumberStr проведена, вибрані рядки видалено.',
+          ),
+        ),
+      );
+
+      if (widget.onPropozCompleted != null) {
+        widget.onPropozCompleted!();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Помилка при проведенні пропозиції: $e')),
+      );
+    } finally {
+      setState(() => _isProcessing = false);
     }
   }
 
@@ -556,9 +608,18 @@ class _PropPlanAssignTabState extends State<PropPlanAssignTab> {
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                 ),
-                onPressed: _addPropoz,
-                icon: const Icon(Icons.add_card_sharp),
-                label: const Text("Провести зміни"),
+                onPressed: _isProcessing ? null : _addPropoz,
+                icon: _isProcessing
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.add_card_sharp),
+                label: Text(_isProcessing ? 'Обробка...' : 'Провести зміни'),
               ),
               const SizedBox(width: 8),
               ElevatedButton.icon(

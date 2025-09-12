@@ -74,11 +74,9 @@ class ApiService {
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(res.body);
         if (data.isEmpty) return null;
-        // Сортуємо за number, беремо останній
         data.sort((a, b) => (a['number'] as int).compareTo(b['number'] as int));
         return data.last as Map<String, dynamic>;
       } else if (res.statusCode == 404) {
-        // Файл ще не створений, повертаємо null
         return null;
       } else {
         throw Exception('Помилка отримання пропозицій: ${res.statusCode}');
@@ -98,11 +96,23 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> addPropoz(int? number, String note) async {
+  Future<Map<String, dynamic>> addPropoz(
+    int? number,
+    String note,
+    String kpkv,
+    String fond,
+  ) async {
+    final date = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
     final res = await http.post(
       Uri.parse('$baseUrl/propoz'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'number': number, 'note': note}),
+      body: jsonEncode({
+        'number': number,
+        'note': note,
+        'date': date,
+        'kpkv': kpkv,
+        'fond': fond,
+      }),
     );
     if (res.statusCode == 201) {
       return jsonDecode(res.body);
@@ -115,11 +125,20 @@ class ApiService {
     String id,
     int number,
     String note,
+    String kpkv,
+    String fond,
   ) async {
+    final date = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
     final res = await http.put(
       Uri.parse('$baseUrl/propoz/$id'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'number': number, 'note': note}),
+      body: jsonEncode({
+        'number': number,
+        'note': note,
+        'date': date,
+        'kpkv': kpkv,
+        'fond': fond,
+      }),
     );
     if (res.statusCode == 200) {
       return jsonDecode(res.body);
@@ -132,6 +151,69 @@ class ApiService {
     final res = await http.delete(Uri.parse('$baseUrl/propoz/$id'));
     if (res.statusCode != 200) {
       throw Exception('Помилка при видаленні пропозиції');
+    }
+  }
+  // ---------------- ДОДАТКОВИЙ МЕТОД ДЛЯ НОВОЇ БАЗИ ----------------
+
+  // Додати пропозицію у нову базу (res файл)
+  Future<Map<String, dynamic>> addResPropoz(
+    List<Map<String, dynamic>> items,
+    int year,
+    String kpkv,
+    String fond,
+    String newNumberStr,
+  ) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/res_plan_assign/${year}/${kpkv}/${fond}'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'numberPropose': newNumberStr,
+        'items': items,
+        'year': year,
+        'kpkv': kpkv,
+        'fond': fond,
+      }),
+    );
+
+    if (res.statusCode == 201) {
+      final decoded = jsonDecode(res.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      } else {
+        throw Exception('Очікувався об’єкт пропозиції, отримано: $decoded');
+      }
+    } else {
+      throw Exception(
+        'Помилка при створенні respropoz: ${res.statusCode} → ${res.body}',
+      );
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchResPlans(
+    int year,
+    String kpkv,
+    String fond,
+  ) async {
+    // Формуємо шлях до локального файлу на бекенді
+    final fileName = 'res_plan_assign/${year}/${kpkv}/$fond';
+    // print(fileName);
+    final url = '$baseUrl/$fileName';
+    // print(url);
+
+    final res = await http.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    // print(res.body);
+
+    if (res.statusCode == 200) {
+      final List<dynamic> decoded = jsonDecode(res.body);
+      return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+    } else {
+      throw Exception(
+        'Помилка при завантаженні резудьтатів пропозицій: ${res.statusCode} → ${res.body}',
+      );
     }
   }
 }
