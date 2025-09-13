@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/account.dart';
+import 'package:fin/models/res_propoz.dart';
 
 class ApiService {
   final String baseUrl;
@@ -155,19 +156,42 @@ class ApiService {
   }
   // ---------------- ДОДАТКОВИЙ МЕТОД ДЛЯ НОВОЇ БАЗИ ----------------
 
-  // Додати пропозицію у нову базу (res файл)
-  Future<Map<String, dynamic>> addResPropoz(
+  // ---------------- GET ALL ResPropoz ----------------
+  Future<List<ResPropoz>> fetchResPropoz(
+    int year,
+    String kpkv,
+    String fond,
+  ) async {
+    final url = '$baseUrl/res_plan_assign/$year/$kpkv/$fond';
+    final res = await http.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (res.statusCode == 200) {
+      final List<dynamic> decoded = jsonDecode(res.body);
+      return decoded.map((e) => ResPropoz.fromJson(e)).toList();
+    } else {
+      throw Exception(
+        'Помилка при завантаженні ResPropoz: ${res.statusCode} → ${res.body}',
+      );
+    }
+  }
+
+  // ---------------- CREATE ResPropoz ----------------
+  Future<ResPropoz> addResPropoz(
     List<Map<String, dynamic>> items,
     int year,
     String kpkv,
     String fond,
-    String newNumberStr,
+    String numberPropose,
   ) async {
+    final url = '$baseUrl/res_plan_assign/$year/$kpkv/$fond';
     final res = await http.post(
-      Uri.parse('$baseUrl/res_plan_assign/${year}/${kpkv}/${fond}'),
+      Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'numberPropose': newNumberStr,
+        'numberPropose': numberPropose,
         'items': items,
         'year': year,
         'kpkv': kpkv,
@@ -177,42 +201,55 @@ class ApiService {
 
     if (res.statusCode == 201) {
       final decoded = jsonDecode(res.body);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
-      } else {
-        throw Exception('Очікувався об’єкт пропозиції, отримано: $decoded');
-      }
+      return ResPropoz.fromJson(decoded);
     } else {
       throw Exception(
-        'Помилка при створенні respropoz: ${res.statusCode} → ${res.body}',
+        'Помилка при створенні ResPropoz: ${res.statusCode} → ${res.body}',
       );
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchResPlans(
+  // ---------------- UPDATE ResPropoz ----------------
+  Future<ResPropoz> updateResPropoz(
     int year,
     String kpkv,
     String fond,
+    int id,
+    ResPropoz updated,
   ) async {
-    // Формуємо шлях до локального файлу на бекенді
-    final fileName = 'res_plan_assign/${year}/${kpkv}/$fond';
-    // print(fileName);
-    final url = '$baseUrl/$fileName';
-    // print(url);
+    final url = '$baseUrl/res_plan_assign/$year/$kpkv/$fond/$id';
+    final res = await http.put(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(updated.toJson()),
+    );
 
-    final res = await http.get(
+    if (res.statusCode == 200) {
+      final decoded = jsonDecode(res.body);
+      return ResPropoz.fromJson(decoded);
+    } else {
+      throw Exception(
+        'Помилка при оновленні ResPropoz: ${res.statusCode} → ${res.body}',
+      );
+    }
+  }
+
+  // ---------------- DELETE ResPropoz ----------------
+  Future<void> deleteResPropoz(
+    int year,
+    String kpkv,
+    String fond,
+    int id,
+  ) async {
+    final url = '$baseUrl/res_plan_assign/$year/$kpkv/$fond/$id';
+    final res = await http.delete(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
     );
 
-    // print(res.body);
-
-    if (res.statusCode == 200) {
-      final List<dynamic> decoded = jsonDecode(res.body);
-      return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
-    } else {
+    if (res.statusCode != 204) {
       throw Exception(
-        'Помилка при завантаженні резудьтатів пропозицій: ${res.statusCode} → ${res.body}',
+        'Помилка при видаленні ResPropoz: ${res.statusCode} → ${res.body}',
       );
     }
   }

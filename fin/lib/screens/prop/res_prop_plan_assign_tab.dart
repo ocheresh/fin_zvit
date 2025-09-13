@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:fin/services/api_service.dart'; // твій ApiService
+import 'package:fin/services/api_service.dart';
+import 'package:fin/models/res_propoz.dart';
+import 'package:fin/models/reference_item.dart';
+import 'package:fin/services/reference_api_service.dart';
 
 class ResPropPlanPage extends StatefulWidget {
   final int year;
@@ -43,20 +46,11 @@ class ResPropPlanPage extends StatefulWidget {
 class _ResPropPlanPageState extends State<ResPropPlanPage> {
   late ApiService apiService;
 
-  List<Map<String, dynamic>> data = [];
+  List<ResPropoz> data = [];
   bool _isLoading = true;
   String currentQuery = "";
 
-  final Map<String, String> kekvDict = {
-    "0000": "Невідомо", // fallback
-    "2240": "Оплата послуг",
-    "2260": "Комунальні послуги",
-    "3110": "Закупівля обладнання",
-    "3120": "Будівництво",
-    "3130": "Послуги",
-    "3140": "Оплата праці",
-    "3150": "Інші видатки",
-  };
+  Map<String, List<String>> expensesDict = {};
 
   @override
   void initState() {
@@ -70,21 +64,38 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
     setState(() => _isLoading = true);
 
     try {
-      final plans = await apiService.fetchResPlans(
+      final references = await ReferenceApiService(
+        "http://localhost:3000",
+      ).fetchCategories();
+      final plans = await apiService.fetchResPropoz(
         widget.year,
         widget.kpkv,
         widget.fund,
       );
 
+      // будуємо словник витрат лише з KEKV_det для КЕКВ, що є в таблиці
+      expensesDict = {};
+      if (references.containsKey("KEKV_det")) {
+        final kekvRows = plans
+            .expand((proposal) => proposal.rows)
+            .map((r) => r.kekv)
+            .toSet();
+
+        for (var item in references["KEKV_det"]!) {
+          if (kekvRows.contains(item.name)) {
+            expensesDict.putIfAbsent(item.name, () => []);
+            if (item.info.isNotEmpty) expensesDict[item.name]!.add(item.info);
+          }
+        }
+      }
+
       if (!mounted) return;
       setState(() {
-        // Дані вже готові – просто присвоюємо
-        data = List<Map<String, dynamic>>.from(plans);
+        data = plans;
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      print(e);
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(
         context,
@@ -92,34 +103,10 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
     }
   }
 
-  String _monthFromDate(String dateStr) {
-    try {
-      final monthIndex = DateTime.parse(dateStr).month;
-      const months = [
-        "Січень",
-        "Лютий",
-        "Березень",
-        "Квітень",
-        "Травень",
-        "Червень",
-        "Липень",
-        "Серпень",
-        "Вересень",
-        "Жовтень",
-        "Листопад",
-        "Грудень",
-      ];
-      return months[monthIndex - 1];
-    } catch (_) {
-      return "Не визначено";
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoading)
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
 
     final headers = [
       "Відомчий код",
@@ -148,9 +135,13 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
         itemCount: data.length,
         itemBuilder: (context, index) {
           final proposal = data[index];
-          final totalSum = proposal["rows"].fold<int>(
+          final rowsToShow = (proposal.filteredRows ?? proposal.rows)
+              .whereType<ResPropozRow>()
+              .toList();
+
+          final totalSum = rowsToShow.fold<int>(
             0,
-            (sum, row) => sum + row["vsogo"] as int,
+            (int sum, ResPropozRow row) => sum + (row.vsogo ?? 0),
           );
 
           return Card(
@@ -167,7 +158,7 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Пропозиція № ${proposal["id"]} за ${proposal["month"]} ${proposal["year"]}",
+                        "Пропозиція № ${proposal.id} за ${proposal.month} ${proposal.year}",
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text("Всього: $totalSum"),
@@ -180,60 +171,30 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
                         _actionButton(
                           label: "Відхилити",
                           color: Colors.redAccent,
-                          enabled: !proposal["approved"],
+                          enabled: proposal.approved ?? true,
                           onPressed: () {
                             if (!mounted) return;
-                            debugPrint(
-                              "Відхилено пропозицію № ${proposal["id"]}",
-                            );
+                            setState(() => proposal.approved = false);
                           },
                         ),
                         const SizedBox(width: 8),
                         _actionButton(
                           label: "Видалити",
                           color: Colors.grey,
-                          enabled: !proposal["approved"],
+                          enabled: proposal.approved != true,
                           onPressed: () {
                             if (!mounted) return;
                             setState(() => data.removeAt(index));
-                            debugPrint(
-                              "Видалено пропозицію № ${proposal["id"]}",
-                            );
                           },
                         ),
                         const SizedBox(width: 8),
                         _actionButton(
                           label: "Затвердити",
                           color: Colors.green,
-                          enabled: !proposal["approved"],
+                          enabled: proposal.approved != true,
                           onPressed: () {
                             if (!mounted) return;
-                            setState(() => proposal["approved"] = true);
-                            debugPrint(
-                              "Затверджено пропозицію № ${proposal["id"]}",
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _actionButtonWithIcon(
-                          label: "Сформувати пропозиції",
-                          color: Colors.green,
-                          icon: Icons.file_download,
-                          onPressed: () {
-                            debugPrint(
-                              "Файл пропозицій сформовано для № ${proposal["id"]}",
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _actionButtonWithIcon(
-                          label: "Сформувати детальні розрахунки",
-                          color: Colors.green,
-                          icon: Icons.file_download,
-                          onPressed: () {
-                            debugPrint(
-                              "Детальні розрахунки сформовано для № ${proposal["id"]}",
-                            );
+                            setState(() => proposal.approved = true);
                           },
                         ),
                       ],
@@ -259,17 +220,18 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
                       if (!mounted) return;
                       setState(() {
                         currentQuery = query;
-                        proposal["filteredRows"] = proposal["rows"]
+                        proposal.filteredRows = proposal.rows
                             .where(
                               (row) =>
-                                  row["vidomchyiKod"].toString().contains(
-                                    query,
+                                  row.vidomchyiKod.toLowerCase().contains(
+                                    query.toLowerCase(),
                                   ) ||
-                                  row["kekv"].toString().contains(query) ||
-                                  row["nameRozporyad"]
-                                      .toString()
-                                      .toLowerCase()
-                                      .contains(query.toLowerCase()),
+                                  row.kekv.toLowerCase().contains(
+                                    query.toLowerCase(),
+                                  ) ||
+                                  row.nameRozporyad.toLowerCase().contains(
+                                    query.toLowerCase(),
+                                  ),
                             )
                             .toList();
                       });
@@ -278,9 +240,13 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
                 ),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final columnWidth = constraints.maxWidth / headers.length;
-                    final rowsToShow =
-                        proposal["filteredRows"] ?? proposal["rows"];
+                    // визначаємо ширину для всіх колонок
+                    final fixedColumnWidth =
+                        150.0; // ширина для колонки Витрати
+                    final otherColumns = headers.length - 1; // всі інші колонки
+                    final adaptiveWidth =
+                        (constraints.maxWidth - fixedColumnWidth) /
+                        otherColumns;
 
                     return SingleChildScrollView(
                       scrollDirection: Axis.vertical,
@@ -288,7 +254,11 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
                         border: TableBorder.all(color: Colors.grey.shade400),
                         columnWidths: {
                           for (int i = 0; i < headers.length; i++)
-                            i: FixedColumnWidth(columnWidth),
+                            i: FixedColumnWidth(
+                              headers[i] == "Витрати"
+                                  ? fixedColumnWidth
+                                  : adaptiveWidth,
+                            ),
                         },
                         children: [
                           TableRow(
@@ -312,25 +282,23 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
                           ...rowsToShow.map<TableRow>((row) {
                             return TableRow(
                               children: [
+                                _highlightCell(row.vidomchyiKod, currentQuery),
+                                _highlightCell(row.nameRozporyad, currentQuery),
+                                _expensesDropdown(row), // фіксована ширина
+                                _highlightCell(row.kekv, currentQuery),
                                 _highlightCell(
-                                  row["vidomchyiKod"].toString(),
-                                  currentQuery,
+                                  (row.vsogo ?? 0).toString(),
+                                  null,
                                 ),
-                                _highlightCell(
-                                  row["nameRozporyad"].toString(),
-                                  currentQuery,
-                                ),
-                                _expensesDropdown(row),
-                                _highlightCell(
-                                  row["kekv"].toString(),
-                                  currentQuery,
-                                ),
-                                _highlightCell(row["vsogo"].toString(), null),
-                                ...row["months"].entries.map(
-                                  (e) =>
-                                      _highlightCell(e.value.toString(), null),
-                                ),
-                                _highlightCell(row["notes"].toString(), null),
+                                ...row.months.entries
+                                    .map(
+                                      (e) => _highlightCell(
+                                        (e.value ?? 0).toString(),
+                                        null,
+                                      ),
+                                    )
+                                    .toList(),
+                                _highlightCell(row.notes ?? "", null),
                               ],
                             );
                           }).toList(),
@@ -390,34 +358,37 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
     ),
   );
 
-  Widget _expensesDropdown(Map<String, dynamic> row) {
+  Widget _expensesDropdown(ResPropozRow row) {
+    final availableExpenses = expensesDict[row.kekv] ?? [""];
+
+    final items = availableExpenses
+        .map(
+          (e) => DropdownMenuItem<String>(
+            value: e,
+            child: Text(e, style: const TextStyle(fontSize: 11)),
+          ),
+        )
+        .toList();
+
     return Padding(
       padding: const EdgeInsets.all(4.0),
-      child: DropdownButton<String>(
-        value: row["kekv"] != null && kekvDict.containsKey(row["kekv"])
-            ? row["kekv"]
-            : "0000", // fallback якщо немає
+      child: DropdownButtonFormField<String>(
+        value: availableExpenses.contains(row.nameVytrat)
+            ? row.nameVytrat
+            : availableExpenses.first,
         isExpanded: true,
-        items: kekvDict.entries
-            .map(
-              (entry) => DropdownMenuItem<String>(
-                value: entry.key,
-                child: Text(
-                  "${entry.key} — ${entry.value}",
-                  style: const TextStyle(fontSize: 11),
-                ),
-              ),
-            )
-            .toList(),
+        items: items,
         onChanged: (value) {
-          if (!mounted) return;
-          if (value != null) {
-            setState(() {
-              row["kekv"] = value;
-              row["nameVytrat"] = kekvDict[value] ?? "Невідомо";
-            });
-          }
+          if (!mounted || value == null) return;
+          setState(() {
+            row.nameVytrat = value;
+          });
         },
+        decoration: const InputDecoration(
+          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
       ),
     );
   }
@@ -428,12 +399,7 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
     required bool enabled,
     required VoidCallback onPressed,
   }) => ElevatedButton(
-    onPressed: enabled
-        ? () {
-            if (!mounted) return;
-            onPressed();
-          }
-        : null,
+    onPressed: enabled ? onPressed : null,
     style: ElevatedButton.styleFrom(
       backgroundColor: color,
       foregroundColor: Colors.white,
@@ -442,30 +408,6 @@ class _ResPropPlanPageState extends State<ResPropPlanPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     child: Text(
-      label,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-    ),
-  );
-
-  Widget _actionButtonWithIcon({
-    required String label,
-    required Color color,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) => ElevatedButton.icon(
-    onPressed: () {
-      if (!mounted) return;
-      onPressed();
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: color,
-      foregroundColor: Colors.white,
-      minimumSize: const Size(80, 30),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-    icon: Icon(icon, size: 16),
-    label: Text(
       label,
       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
     ),

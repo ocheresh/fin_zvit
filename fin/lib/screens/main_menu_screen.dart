@@ -46,7 +46,7 @@ class MainMenuScreen extends StatelessWidget {
             _buildMenuButton(
               context,
               icon: Icons.queue_play_next_sharp,
-              title: 'Пропозицію по розподілу та кошторису',
+              title: 'Пропозиції до кошторису',
               description: 'Реєстр змін',
               onTap: () {
                 Navigator.push(
