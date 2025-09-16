@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fin/services/api_service.dart';
 import 'package:fin/models/res_propoz.dart';
-import 'package:fin/models/reference_item.dart';
 import 'package:fin/services/reference_api_service.dart';
 
 class ResPropPlanPage extends StatefulWidget {
