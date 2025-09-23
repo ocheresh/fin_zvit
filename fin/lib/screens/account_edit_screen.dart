@@ -253,10 +253,11 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
 
   void _saveAccount() {
     if (_formKey.currentState!.validate()) {
+      final int idValue = widget.isEditing
+          ? widget.account!.id
+          : 0; // 0 — маркер "новий"
       final account = Account(
-        id: widget.isEditing
-            ? widget.account!.id
-            : DateTime.now().millisecondsSinceEpoch.toString(),
+        id: idValue,
         rozporiadNumber: _rozporiadNumberController.text,
         accountNumber: _accountNumberController.text,
         legalName: _legalNameController.text,

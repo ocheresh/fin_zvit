@@ -12,7 +12,7 @@ class ApiService {
 
   // Отримати всі рахунки
   Future<List<Account>> fetchAccounts() async {
-    final res = await http.get(Uri.parse('$baseUrl/accounts'));
+    final res = await http.get(Uri.parse('$baseUrl/account'));
     if (res.statusCode == 200) {
       final List<dynamic> data = jsonDecode(res.body);
       return data.map((e) => Account.fromJson(e)).toList();
@@ -24,7 +24,7 @@ class ApiService {
   // Додати рахунок
   Future<Account> addAccount(Account account) async {
     final res = await http.post(
-      Uri.parse('$baseUrl/accounts'),
+      Uri.parse('$baseUrl/account'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(account.toJson()),
     );
@@ -38,7 +38,7 @@ class ApiService {
   // Оновити рахунок
   Future<Account> updateAccount(Account account) async {
     final res = await http.put(
-      Uri.parse('$baseUrl/accounts/${account.id}'),
+      Uri.parse('$baseUrl/account/${account.id}'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(account.toJson()),
     );
@@ -50,8 +50,8 @@ class ApiService {
   }
 
   // Видалити рахунок
-  Future<void> deleteAccount(String id) async {
-    final res = await http.delete(Uri.parse('$baseUrl/accounts/$id'));
+  Future<void> deleteAccount(int id) async {
+    final res = await http.delete(Uri.parse('$baseUrl/account/$id'));
     if (res.statusCode != 204) {
       throw Exception('Помилка при видаленні рахунку');
     }

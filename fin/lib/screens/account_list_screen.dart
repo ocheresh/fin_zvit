@@ -79,10 +79,10 @@ class _AccountListScreenState extends State<AccountListScreen> {
                 account.edrpou.toLowerCase().contains(_searchQuery)) {
               matches = true;
             }
-            if (_filterOptions['subordination'] == true &&
-                account.subordination.toLowerCase().contains(_searchQuery)) {
-              matches = true;
-            }
+            // if (_filterOptions['subordinationId'] == true &&
+            //     account.subordinationId.toLowerCase().contains(_searchQuery)) {
+            //   matches = true;
+            // }
             if (_filterOptions['additionalInfo'] == true &&
                 account.additionalInfo.toLowerCase().contains(_searchQuery)) {
               matches = true;
@@ -173,7 +173,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
               _buildDetailRow('Розпорядний номер', account.rozporiadNumber),
               _buildDetailRow('Найменування', account.legalName),
               _buildDetailRow('ЄДРПОУ', account.edrpou),
-              _buildDetailRow('Підпорядкованість', account.subordination),
+              // _buildDetailRow('Підпорядкованість', account.subordinationId),
               if (account.additionalInfo.isNotEmpty)
                 _buildDetailRow('Додаткова інформація', account.additionalInfo),
             ],

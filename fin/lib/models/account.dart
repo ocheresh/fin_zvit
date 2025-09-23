@@ -1,5 +1,5 @@
 class Account {
-  String id;
+  int id;
   String rozporiadNumber;
   String accountNumber;
   String legalName;
@@ -13,18 +13,27 @@ class Account {
     required this.accountNumber,
     required this.legalName,
     required this.edrpou,
-    required this.subordination,
+    this.subordination = '', // <-- новий аргумент із дефолтом
     this.additionalInfo = '', // Додано з значенням за замовчуванням
   });
 
   factory Account.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    final int parsedId = switch (rawId) {
+      int v => v,
+      String s => int.tryParse(s) ?? DateTime.now().millisecondsSinceEpoch,
+      _ => DateTime.now().millisecondsSinceEpoch,
+    };
+
     return Account(
-      id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: parsedId,
       rozporiadNumber: json['rozporiadNumber'] ?? '',
       accountNumber: json['accountNumber'] ?? '',
       legalName: json['legalName'] ?? '',
       edrpou: json['edrpou'] ?? '',
-      subordination: json['subordination'] ?? '',
+      subordination:
+          json['subordination'] ??
+          '', // <-- читаємо, якщо бекенд підкладає name
       additionalInfo: json['additionalInfo'] ?? '', // Додано
     );
   }
@@ -36,13 +45,13 @@ class Account {
       'accountNumber': accountNumber,
       'legalName': legalName,
       'edrpou': edrpou,
-      'subordination': subordination,
+      'subordination': subordination, // <-- кладемо назад (якщо треба)
       'additionalInfo': additionalInfo, // Додано
     };
   }
 
   Account copyWith({
-    String? id,
+    int? id,
     String? rozporiadNumber,
     String? accountNumber,
     String? legalName,
@@ -56,7 +65,7 @@ class Account {
       accountNumber: accountNumber ?? this.accountNumber,
       legalName: legalName ?? this.legalName,
       edrpou: edrpou ?? this.edrpou,
-      subordination: subordination ?? this.subordination,
+      subordination: subordination ?? this.subordination, // <-- додали
       additionalInfo: additionalInfo ?? this.additionalInfo, // Додано
     );
   }
