@@ -73,7 +73,7 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
               // Розпорядчий номер
               _buildFormField(
                 controller: _rozporiadNumberController,
-                labelText: 'Номер розпорядника коштів',
+                labelText: 'Номер розпорядника коштів *',
                 hintText: 'Введіть номер',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -88,7 +88,7 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
               // Особовий рахунок
               _buildFormField(
                 controller: _accountNumberController,
-                labelText: 'Особовий рахунок №',
+                labelText: 'Особовий рахунок № *',
                 hintText: 'Введіть номер рахунку',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -103,7 +103,7 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
               // Найменування
               _buildFormField(
                 controller: _legalNameController,
-                labelText: 'Найменування',
+                labelText: 'Найменування *',
                 hintText: 'Введіть найменування',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -120,18 +120,7 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
                 controller: _edrpouController,
                 labelText: 'ЄДРПОУ',
                 hintText: 'Введіть 8-значний код ЄДРПОУ',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Обов\'язкове поле';
-                  }
-                  if (value.length != 8) {
-                    return 'ЄДРПОУ має містити рівно 8 цифр';
-                  }
-                  if (!RegExp(r'^\d+$').hasMatch(value)) {
-                    return 'Тільки цифри дозволені';
-                  }
-                  return null;
-                },
+                validator: (value) => null,
                 keyboardType: TextInputType.number,
                 icon: Icons.receipt_long_sharp,
               ),
@@ -140,7 +129,7 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
               // Підпорядкованість
               _buildFormField(
                 controller: _subordinationController,
-                labelText: 'Підпорядкованість',
+                labelText: 'Підпорядкованість *',
                 hintText: 'Введіть підпорядкованість',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
