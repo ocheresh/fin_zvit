@@ -32,7 +32,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
   final Map<String, String> _filterLabels = {
     "accountNumber": "Особовий рахунок",
-    "rozporiadNumber": "Розпорядний номер",
+    "rozporiadNumber": "Номер розпорядника коштів",
     "legalName": "Найменування",
     "edrpou": "ЄДРПОУ",
     "subordination": "Підпорядкованість",
@@ -233,7 +233,10 @@ class _AccountListScreenState extends State<AccountListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildDetailRow('Особовий рахунок', account.accountNumber),
-              _buildDetailRow('Розпорядний номер', account.rozporiadNumber),
+              _buildDetailRow(
+                'Номер розпорядника коштів',
+                account.rozporiadNumber,
+              ),
               _buildDetailRow('Найменування', account.legalName),
               _buildDetailRow('ЄДРПОУ', account.edrpou),
               _buildDetailRow('Підпорядкованість', account.subordination),
@@ -345,13 +348,6 @@ class _AccountListScreenState extends State<AccountListScreen> {
               ),
             ),
           ),
-          // IconButton(
-          //   onPressed: () async {
-          //     await exportAccountsToExcel(await _futureAccounts);
-          //   },
-          //   icon: const Icon(Icons.table_view_sharp, color: Colors.white),
-          //   // color: Colors.red,
-          // ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
@@ -404,7 +400,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                           columnSpacing: 0,
                           columns: const [
                             DataColumn(label: Text('Особовий рахунок')),
-                            DataColumn(label: Text('Розпорядний номер')),
+                            DataColumn(label: Text('№ розп-ка коштів')),
                             DataColumn(label: Text('Найменування')),
                             DataColumn(label: Text('ЄДРПОУ')),
                             DataColumn(label: Text('Підпорядкованість')),
