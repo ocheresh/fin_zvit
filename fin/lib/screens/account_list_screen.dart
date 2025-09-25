@@ -26,6 +26,15 @@ class _AccountListScreenState extends State<AccountListScreen> {
     'additionalInfo': true,
   };
 
+  final Map<String, String> _filterLabels = {
+    "accountNumber": "Особовий рахунок",
+    "rozporiadNumber": "Розпорядний номер",
+    "legalName": "Найменування",
+    "edrpou": "ЄДРПОУ",
+    "subordination": "Підпорядкованість",
+    "additionalInfo": "Додаткова інформація",
+  };
+
   @override
   void initState() {
     super.initState();
@@ -79,10 +88,10 @@ class _AccountListScreenState extends State<AccountListScreen> {
                 account.edrpou.toLowerCase().contains(_searchQuery)) {
               matches = true;
             }
-            // if (_filterOptions['subordinationId'] == true &&
-            //     account.subordinationId.toLowerCase().contains(_searchQuery)) {
-            //   matches = true;
-            // }
+            if (_filterOptions['subordination'] == true &&
+                account.subordination.toLowerCase().contains(_searchQuery)) {
+              matches = true;
+            }
             if (_filterOptions['additionalInfo'] == true &&
                 account.additionalInfo.toLowerCase().contains(_searchQuery)) {
               matches = true;
@@ -220,7 +229,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: _filterOptions.keys.map((key) {
                     return CheckboxListTile(
-                      title: Text(key),
+                      title: Text(_filterLabels[key] ?? key),
                       value: _filterOptions[key],
                       onChanged: (value) {
                         setDialogState(() {
