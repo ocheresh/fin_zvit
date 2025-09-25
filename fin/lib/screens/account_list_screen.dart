@@ -266,48 +266,50 @@ class _AccountListScreenState extends State<AccountListScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAccounts),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Пошук рахунків',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: _clearSearch,
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  labelText: 'Пошук рахунків',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: _clearSearch,
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: FutureBuilder<List<Account>>(
-              future: _futureAccounts,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final accounts = _searchQuery.isEmpty
-                      ? snapshot.data!
-                      : _filteredAccounts;
-                  if (accounts.isEmpty) {
-                    return const Center(child: Text("Рахунків не знайдено"));
-                  }
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: constraints.maxWidth,
-                          ),
+            Expanded(
+              child: FutureBuilder<List<Account>>(
+                future: _futureAccounts,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final accounts = _searchQuery.isEmpty
+                        ? snapshot.data!
+                        : _filteredAccounts;
+
+                    if (accounts.isEmpty) {
+                      return const Center(child: Text("Рахунків не знайдено"));
+                    }
+
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Кількість колонок
+                        const columnCount = 7;
+                        final columnWidth = constraints.maxWidth / columnCount;
+
+                        return SingleChildScrollView(
                           child: DataTable(
-                            columnSpacing: 20,
+                            columnSpacing: 0,
                             columns: const [
                               DataColumn(label: Text('Особовий рахунок')),
                               DataColumn(label: Text('Розпорядний номер')),
@@ -319,18 +321,40 @@ class _AccountListScreenState extends State<AccountListScreen> {
                             ],
                             rows: accounts.map((account) {
                               return DataRow(
-                                onLongPress: () => _showAccountDetails(account),
                                 cells: [
-                                  DataCell(Text(account.accountNumber)),
-                                  DataCell(Text(account.rozporiadNumber)),
-                                  DataCell(Text(account.legalName)),
-                                  DataCell(Text(account.edrpou)),
-                                  DataCell(Text(account.subordination)),
                                   DataCell(
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 150,
-                                      ),
+                                    SizedBox(
+                                      width: columnWidth,
+                                      child: Text(account.accountNumber),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: columnWidth,
+                                      child: Text(account.rozporiadNumber),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: columnWidth,
+                                      child: Text(account.legalName),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: columnWidth,
+                                      child: Text(account.edrpou),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: columnWidth,
+                                      child: Text(account.subordination),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: columnWidth,
                                       child: Text(
                                         account.additionalInfo.isNotEmpty
                                             ? account.additionalInfo
@@ -340,51 +364,54 @@ class _AccountListScreenState extends State<AccountListScreen> {
                                     ),
                                   ),
                                   DataCell(
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.visibility,
-                                            color: Colors.blue,
+                                    SizedBox(
+                                      width: columnWidth,
+                                      child: Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.visibility,
+                                              color: Colors.blue,
+                                            ),
+                                            onPressed: () =>
+                                                _showAccountDetails(account),
                                           ),
-                                          onPressed: () =>
-                                              _showAccountDetails(account),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.edit,
-                                            color: Colors.green,
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              color: Colors.green,
+                                            ),
+                                            onPressed: () =>
+                                                _editAccount(account),
                                           ),
-                                          onPressed: () =>
-                                              _editAccount(account),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ),
+                                            onPressed: () =>
+                                                _deleteAccount(account),
                                           ),
-                                          onPressed: () =>
-                                              _deleteAccount(account),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
                               );
                             }).toList(),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("Помилка: ${snapshot.error}"));
-                }
-                return const Center(child: CircularProgressIndicator());
-              },
+                        );
+                      },
+                    );
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("Помилка: ${snapshot.error}"));
+                  }
+                  return const Center(child: CircularProgressIndicator());
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addAccount,
