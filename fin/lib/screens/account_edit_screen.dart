@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/account.dart';
+import '../services/api_service.dart';
 
 class AccountEditScreen extends StatefulWidget {
   final Account? account;
@@ -17,8 +18,16 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   late TextEditingController _rozporiadNumberController;
   late TextEditingController _legalNameController;
   late TextEditingController _edrpouController;
-  late TextEditingController _subordinationController;
+  // late TextEditingController _subordinationController;
   late TextEditingController _additionalInfoController; // Додано контролер
+
+  // API для довідника
+  final _api = ApiService("http://localhost:3000");
+
+  // Довідник підпорядкувань: [{id:1, name:'МОУ'}, ...]
+  List<Map<String, dynamic>> _subs = [];
+  int? _selectedSubId;
+  bool _loadingSubs = true;
 
   @override
   void initState() {
@@ -35,13 +44,57 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
     _edrpouController = TextEditingController(
       text: widget.isEditing ? widget.account?.edrpou ?? '' : '',
     );
-    _subordinationController = TextEditingController(
-      text: widget.isEditing ? widget.account?.subordination ?? '' : '',
-    );
+    // _subordinationController = TextEditingController(
+    //   text: widget.isEditing ? widget.account?.subordination ?? '' : '',
+    // );
     _additionalInfoController = TextEditingController(
       // Ініціалізовано
       text: widget.isEditing ? widget.account?.additionalInfo ?? '' : '',
     );
+    _loadSubordination();
+  }
+
+  Future<void> _loadSubordination() async {
+    try {
+      final list = await _api.fetchSubordination(); // [{id,name},...]
+      final normalized = list
+          .map(
+            (e) => {
+              'id': (e['id'] is int)
+                  ? e['id']
+                  : int.tryParse(e['id']?.toString() ?? ''),
+              'name': e['name']?.toString() ?? '',
+            },
+          )
+          .where((e) => e['id'] != null && (e['name'] as String).isNotEmpty)
+          .toList();
+
+      int? selected;
+      if (widget.isEditing) {
+        // якщо у моделі є subordinationId — використаємо його
+        selected = widget.account?.subordinationId;
+        // якщо збережена лише назва — підберемо id по назві
+        if (selected == null &&
+            (widget.account?.subordination?.isNotEmpty ?? false)) {
+          final hit = normalized.firstWhere(
+            (s) => s['name'] == widget.account!.subordination,
+            orElse: () => {'id': null},
+          );
+          selected = hit['id'] as int?;
+        }
+      }
+
+      setState(() {
+        _subs = normalized;
+        _selectedSubId = selected;
+        _loadingSubs = false;
+      });
+    } catch (e) {
+      setState(() => _loadingSubs = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Не вдалося завантажити підпорядкування: $e')),
+      );
+    }
   }
 
   @override
@@ -50,13 +103,15 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
     _rozporiadNumberController.dispose();
     _legalNameController.dispose();
     _edrpouController.dispose();
-    _subordinationController.dispose();
+    // _subordinationController.dispose();
     _additionalInfoController.dispose(); // Додано dispose
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final saveEnabled = !_loadingSubs && _subs.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEditing ? 'Редагувати рахунок' : 'Додати рахунок'),
@@ -126,19 +181,55 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Підпорядкованість
-              _buildFormField(
-                controller: _subordinationController,
-                labelText: 'Підпорядкованість *',
-                hintText: 'Введіть підпорядкованість',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Обов\'язкове поле';
-                  }
-                  return null;
-                },
-                icon: Icons.account_tree,
-              ),
+              // // Підпорядкованість
+              // _buildFormField(
+              //   controller: _subordinationController,
+              //   labelText: 'Підпорядкованість *',
+              //   hintText: 'Введіть підпорядкованість',
+              //   validator: (value) {
+              //     if (value == null || value.isEmpty) {
+              //       return 'Обов\'язкове поле';
+              //     }
+              //     return null;
+              //   },
+              //   icon: Icons.account_tree,
+              // ),
+              // const SizedBox(height: 16),
+
+              // ▼▼▼ Випадаючий список підпорядкованості ▼▼▼
+              _loadingSubs
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : DropdownButtonFormField<int>(
+                      value: _selectedSubId,
+                      items: _subs
+                          .map(
+                            (s) => DropdownMenuItem<int>(
+                              value: s['id'] as int,
+                              child: Text(s['name'] as String),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedSubId = v),
+                      decoration: InputDecoration(
+                        labelText: 'Підпорядкованість *',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: Icon(
+                          Icons.account_tree,
+                          color: Colors.blue[700],
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      validator: (v) =>
+                          v == null ? 'Оберіть підпорядкування' : null,
+                    ),
               const SizedBox(height: 16),
 
               // Додаткова інформація
@@ -241,22 +332,31 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   }
 
   void _saveAccount() {
-    if (_formKey.currentState!.validate()) {
-      final int idValue = widget.isEditing
-          ? widget.account!.id
-          : 0; // 0 — маркер "новий"
-      final account = Account(
-        id: idValue,
-        rozporiadNumber: _rozporiadNumberController.text,
-        accountNumber: _accountNumberController.text,
-        legalName: _legalNameController.text,
-        edrpou: _edrpouController.text,
-        subordination: _subordinationController.text,
-        additionalInfo:
-            _additionalInfoController.text, // Додано передачу параметра
-      );
+    if (!_formKey.currentState!.validate()) return;
 
-      Navigator.pop(context, account);
-    }
+    final int subId = _selectedSubId!; // <-- було int? → стало int
+
+    final subName =
+        (_subs.firstWhere(
+              (s) => s['id'] == subId,
+              orElse: () => {'name': ''},
+            )['name']
+            as String);
+
+    final account = Account(
+      id: widget.isEditing ? widget.account?.id : null,
+      rozporiadNumber: _rozporiadNumberController.text.trim(),
+      accountNumber: _accountNumberController.text.trim(),
+      legalName: _legalNameController.text.trim(),
+      edrpou: _edrpouController.text.trim(),
+      subordinationId: subId,
+      subordination: subName.isNotEmpty ? subName : null,
+      additionalInfo: _additionalInfoController.text.trim(),
+    );
+
+    Navigator.pop(context, {
+      'ui': account,
+      'subordinationId': _selectedSubId!, // гарантовано вибране валідатором
+    });
   }
 }

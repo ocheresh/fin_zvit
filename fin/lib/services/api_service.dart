@@ -8,6 +8,28 @@ class ApiService {
 
   ApiService(this.baseUrl);
 
+  // Отримати всі subordination
+  Future<List<Map<String, dynamic>>> fetchSubordination() async {
+    final res = await http.get(Uri.parse('$baseUrl/subordination'));
+    if (res.statusCode != 200) {
+      throw Exception(
+        'Помилка при завантаженні підпорядкування: ${res.statusCode}',
+      );
+    }
+
+    final data = jsonDecode(res.body);
+
+    // Підтримуємо обидва формати:
+    // 1) { rows: [...], count: N }  2) просто [...]
+    final List list = (data is Map && data['rows'] is List)
+        ? data['rows'] as List
+        : (data as List);
+
+    return list
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList(growable: false);
+  }
+
   // ---------------- Рахунки ----------------
 
   // Отримати всі рахунки

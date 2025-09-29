@@ -1,54 +1,80 @@
 class Account {
-  int id;
-  String rozporiadNumber;
-  String accountNumber;
-  String legalName;
-  String edrpou;
-  String subordination;
-  String additionalInfo; // Додано нове поле
+  /// ID з БД (INT AUTO_INCREMENT). Для нових записів може бути null.
+  final int? id;
 
-  Account({
-    required this.id,
+  final String rozporiadNumber;
+  final String accountNumber;
+  final String legalName;
+  final String edrpou;
+
+  /// FK на Subordination(id) для API
+  final int? subordinationId;
+
+  /// Людська назва підпорядкування (для UI, опційно)
+  final String? subordination;
+
+  /// Необовʼязкові примітки
+  final String additionalInfo;
+
+  const Account({
+    this.id,
     required this.rozporiadNumber,
     required this.accountNumber,
     required this.legalName,
     required this.edrpou,
-    this.subordination = '', // <-- новий аргумент із дефолтом
-    this.additionalInfo = '', // Додано з значенням за замовчуванням
+    this.subordinationId,
+    this.subordination,
+    this.additionalInfo = '',
   });
 
+  /// Універсальний парсер (підтримує як рядкові, так і числові id)
   factory Account.fromJson(Map<String, dynamic> json) {
-    final rawId = json['id'];
-    final int parsedId = switch (rawId) {
-      int v => v,
-      String s => int.tryParse(s) ?? DateTime.now().millisecondsSinceEpoch,
-      _ => DateTime.now().millisecondsSinceEpoch,
-    };
+    int? _toInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v);
+      return null;
+    }
+
+    String _s(dynamic v) => (v ?? '').toString().trim();
 
     return Account(
-      id: parsedId,
-      rozporiadNumber: json['rozporiadNumber'] ?? '',
-      accountNumber: json['accountNumber'] ?? '',
-      legalName: json['legalName'] ?? '',
-      edrpou: json['edrpou'] ?? '',
-      subordination:
-          json['subordination'] ??
-          '', // <-- читаємо, якщо бекенд підкладає name
-      additionalInfo: json['additionalInfo'] ?? '', // Додано
+      id: _toInt(json['id']),
+      rozporiadNumber: _s(json['rozporiadNumber']),
+      accountNumber: _s(json['accountNumber']),
+      legalName: _s(json['legalName']),
+      edrpou: _s(json['edrpou']),
+      subordinationId: _toInt(json['subordinationId']),
+      subordination: json['subordination'] != null
+          ? _s(json['subordination'])
+          : null,
+      additionalInfo: _s(json['additionalInfo']),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'rozporiadNumber': rozporiadNumber,
-      'accountNumber': accountNumber,
-      'legalName': legalName,
-      'edrpou': edrpou,
-      'subordination': subordination, // <-- кладемо назад (якщо треба)
-      'additionalInfo': additionalInfo, // Додано
-    };
-  }
+  /// Мінімальний JSON для локального зберігання/UI (включає назву підпорядкування)
+  Map<String, dynamic> toJson() => {
+    if (id != null) 'id': id,
+    'rozporiadNumber': rozporiadNumber,
+    'accountNumber': accountNumber,
+    'legalName': legalName,
+    'edrpou': edrpou,
+    'subordinationId': subordinationId,
+    'subordination': subordination,
+    'additionalInfo': additionalInfo,
+  };
+
+  /// JSON саме для API (бек очікує subordinationId, а не назву)
+  Map<String, dynamic> toApiJson() => {
+    if (id != null) 'id': id,
+    'rozporiadNumber': rozporiadNumber,
+    'accountNumber': accountNumber,
+    'legalName': legalName,
+    'edrpou': edrpou,
+    'subordinationId': subordinationId,
+    'subordination': subordination,
+    'additionalInfo': additionalInfo,
+  };
 
   Account copyWith({
     int? id,
@@ -56,8 +82,9 @@ class Account {
     String? accountNumber,
     String? legalName,
     String? edrpou,
+    int? subordinationId,
     String? subordination,
-    String? additionalInfo, // Додано
+    String? additionalInfo,
   }) {
     return Account(
       id: id ?? this.id,
@@ -65,8 +92,39 @@ class Account {
       accountNumber: accountNumber ?? this.accountNumber,
       legalName: legalName ?? this.legalName,
       edrpou: edrpou ?? this.edrpou,
-      subordination: subordination ?? this.subordination, // <-- додали
-      additionalInfo: additionalInfo ?? this.additionalInfo, // Додано
+      subordinationId: subordinationId ?? this.subordinationId,
+      subordination: subordination ?? this.subordination,
+      additionalInfo: additionalInfo ?? this.additionalInfo,
     );
   }
+
+  @override
+  String toString() =>
+      'Account(id: $id, acc: $accountNumber, name: $legalName, edrpou: $edrpou, subId: $subordinationId, sub: $subordination)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Account &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          rozporiadNumber == other.rozporiadNumber &&
+          accountNumber == other.accountNumber &&
+          legalName == other.legalName &&
+          edrpou == other.edrpou &&
+          subordinationId == other.subordinationId &&
+          subordination == other.subordination &&
+          additionalInfo == other.additionalInfo;
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    rozporiadNumber,
+    accountNumber,
+    legalName,
+    edrpou,
+    subordinationId,
+    subordination,
+    additionalInfo,
+  );
 }

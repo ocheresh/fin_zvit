@@ -60,7 +60,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
         ex.TextCellValue(acc.rozporiadNumber),
         ex.TextCellValue(acc.legalName),
         ex.TextCellValue(acc.edrpou),
-        ex.TextCellValue(acc.subordination),
+        ex.TextCellValue(acc.subordination ?? '-'),
         ex.TextCellValue(
           acc.additionalInfo.isNotEmpty ? acc.additionalInfo : "-",
         ),
@@ -102,10 +102,13 @@ class _AccountListScreenState extends State<AccountListScreen> {
     super.dispose();
   }
 
+  List<Account> _allAccounts = [];
+
   void _loadAccounts() {
     setState(() {
       _futureAccounts = _apiService.fetchAccounts().then((accounts) {
-        _filteredAccounts = accounts;
+        _allAccounts = accounts;
+        _applyFilters();
         return accounts;
       });
     });
@@ -119,42 +122,33 @@ class _AccountListScreenState extends State<AccountListScreen> {
   }
 
   void _applyFilters() {
-    _futureAccounts.then((accounts) {
-      setState(() {
-        if (_searchQuery.isEmpty) {
-          _filteredAccounts = accounts;
-        } else {
-          _filteredAccounts = accounts.where((account) {
-            bool matches = false;
-            if (_filterOptions['accountNumber'] == true &&
-                account.accountNumber.toLowerCase().contains(_searchQuery)) {
-              matches = true;
-            }
-            if (_filterOptions['rozporiadNumber'] == true &&
-                account.rozporiadNumber.toLowerCase().contains(_searchQuery)) {
-              matches = true;
-            }
-            if (_filterOptions['legalName'] == true &&
-                account.legalName.toLowerCase().contains(_searchQuery)) {
-              matches = true;
-            }
-            if (_filterOptions['edrpou'] == true &&
-                account.edrpou.toLowerCase().contains(_searchQuery)) {
-              matches = true;
-            }
-            if (_filterOptions['subordination'] == true &&
-                account.subordination.toLowerCase().contains(_searchQuery)) {
-              matches = true;
-            }
-            if (_filterOptions['additionalInfo'] == true &&
-                account.additionalInfo.toLowerCase().contains(_searchQuery)) {
-              matches = true;
-            }
-            return matches;
-          }).toList();
-        }
-      });
-    });
+    if (_searchQuery.isEmpty) {
+      _filteredAccounts = List<Account>.from(_allAccounts);
+      return;
+    }
+    final q = _searchQuery;
+    _filteredAccounts = _allAccounts.where((account) {
+      bool matches = false;
+      if (_filterOptions['accountNumber'] == true &&
+          account.accountNumber.toLowerCase().contains(q))
+        matches = true;
+      if (_filterOptions['rozporiadNumber'] == true &&
+          account.rozporiadNumber.toLowerCase().contains(q))
+        matches = true;
+      if (_filterOptions['legalName'] == true &&
+          account.legalName.toLowerCase().contains(q))
+        matches = true;
+      if (_filterOptions['edrpou'] == true &&
+          account.edrpou.toLowerCase().contains(q))
+        matches = true;
+      if (_filterOptions['subordination'] == true &&
+          (account.subordination ?? '').toLowerCase().contains(q))
+        matches = true; // ← null-safe
+      if (_filterOptions['additionalInfo'] == true &&
+          account.additionalInfo.toLowerCase().contains(q))
+        matches = true;
+      return matches;
+    }).toList();
   }
 
   void _clearSearch() {
@@ -167,8 +161,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
       context,
       MaterialPageRoute(builder: (context) => const AccountEditScreen()),
     );
-    if (result != null && result is Account) {
-      await _apiService.addAccount(result);
+
+    if (result is Map) {
+      final ui = result['ui'] as Account;
+      // final subordinationId = result['subordinationId'] as int;
+
+      await _apiService.addAccount(ui);
       _loadAccounts();
       _showSnackBar('Рахунок успішно додано');
     }
@@ -182,8 +180,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
             AccountEditScreen(account: account, isEditing: true),
       ),
     );
-    if (result != null && result is Account) {
-      await _apiService.updateAccount(result);
+
+    if (result is Map) {
+      final ui = result['ui'] as Account;
+      // final subordinationId = result['subordinationId'] as int;
+
+      await _apiService.updateAccount(ui);
       _loadAccounts();
       _showSnackBar('Рахунок успішно оновлено');
     }
@@ -211,7 +213,11 @@ class _AccountListScreenState extends State<AccountListScreen> {
     );
 
     if (confirmed == true) {
-      await _apiService.deleteAccount(account.id);
+      if (account.id == null) {
+        _showSnackBar('Неможливо видалити: відсутній ID');
+        return;
+      }
+      await _apiService.deleteAccount(account.id!); // ← int!
       _loadAccounts();
       _showSnackBar('Рахунок успішно видалено');
     }
@@ -239,7 +245,10 @@ class _AccountListScreenState extends State<AccountListScreen> {
               ),
               _buildDetailRow('Найменування', account.legalName),
               _buildDetailRow('ЄДРПОУ', account.edrpou),
-              _buildDetailRow('Підпорядкованість', account.subordination),
+              _buildDetailRow(
+                'Підпорядкованість',
+                account.subordination ?? '-',
+              ),
               if (account.additionalInfo.isNotEmpty)
                 _buildDetailRow('Додаткова інформація', account.additionalInfo),
             ],
@@ -388,73 +397,51 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   if (accounts.isEmpty) {
                     return const Center(child: Text("Рахунків не знайдено"));
                   }
+                  // всередині FutureBuilder:
+                  // final accounts = _filteredAccounts;
 
                   return LayoutBuilder(
                     builder: (context, constraints) {
-                      // Кількість колонок
-                      const columnCount = 7;
-                      final columnWidth = constraints.maxWidth / columnCount;
-
                       return SingleChildScrollView(
-                        child: DataTable(
-                          columnSpacing: 0,
-                          columns: const [
-                            DataColumn(label: Text('Особовий рахунок')),
-                            DataColumn(label: Text('№ розп-ка коштів')),
-                            DataColumn(label: Text('Найменування')),
-                            DataColumn(label: Text('ЄДРПОУ')),
-                            DataColumn(label: Text('Підпорядкованість')),
-                            DataColumn(label: Text('Додаткова інформація')),
-                            DataColumn(label: Text('Дії')),
-                          ],
-                          rows: accounts.map((account) {
-                            return DataRow(
-                              cells: [
-                                DataCell(
-                                  SizedBox(
-                                    width: columnWidth,
-                                    child: Text(account.accountNumber),
-                                  ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: columnWidth,
-                                    child: Text(account.rozporiadNumber),
-                                  ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: columnWidth,
-                                    child: Text(account.legalName),
-                                  ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: columnWidth,
-                                    child: Text(account.edrpou),
-                                  ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: columnWidth,
-                                    child: Text(account.subordination),
-                                  ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: columnWidth,
-                                    child: Text(
-                                      account.additionalInfo.isNotEmpty
-                                          ? account.additionalInfo
-                                          : "-",
-                                      overflow: TextOverflow.ellipsis,
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minWidth: constraints.maxWidth,
+                          ),
+                          child: DataTable(
+                            columnSpacing: 20,
+                            columns: const [
+                              DataColumn(label: Text('Особовий рахунок')),
+                              DataColumn(label: Text('№ розп-ка коштів')),
+                              DataColumn(label: Text('Найменування')),
+                              DataColumn(label: Text('ЄДРПОУ')),
+                              DataColumn(label: Text('Підпорядкованість')),
+                              DataColumn(label: Text('Додаткова інформація')),
+                              DataColumn(label: Text('Дії')),
+                            ],
+                            rows: accounts.map((account) {
+                              return DataRow(
+                                cells: [
+                                  DataCell(Text(account.accountNumber)),
+                                  DataCell(Text(account.rozporiadNumber)),
+                                  DataCell(Text(account.legalName)),
+                                  DataCell(Text(account.edrpou)),
+                                  DataCell(
+                                    Text(account.subordination ?? '-'),
+                                  ), // ← null-safe
+                                  DataCell(
+                                    SizedBox(
+                                      width: 180,
+                                      child: Text(
+                                        account.additionalInfo.isNotEmpty
+                                            ? account.additionalInfo
+                                            : "-",
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: columnWidth,
-                                    child: Row(
+                                  DataCell(
+                                    Row(
                                       children: [
                                         IconButton(
                                           icon: const Icon(
@@ -483,10 +470,10 @@ class _AccountListScreenState extends State<AccountListScreen> {
                                       ],
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
+                                ],
+                              );
+                            }).toList(),
+                          ),
                         ),
                       );
                     },
