@@ -1,5 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../services/reference_api_service.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../models/reference_item.dart';
 
 class ReferenceScreen extends StatefulWidget {
@@ -10,10 +11,6 @@ class ReferenceScreen extends StatefulWidget {
 }
 
 class _ReferenceScreenState extends State<ReferenceScreen> {
-  final ReferenceApiService apiService = ReferenceApiService(
-    "http://localhost:3000",
-  );
-
   Map<String, List<ReferenceItem>> categories = {};
   bool _loading = true;
 
@@ -26,112 +23,134 @@ class _ReferenceScreenState extends State<ReferenceScreen> {
   Future<void> _loadCategories() async {
     setState(() => _loading = true);
     try {
-      final fetched = await apiService.fetchCategories();
+      final jsonString = await rootBundle.loadString('assets/references.json');
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+
       setState(() {
-        categories = fetched;
+        categories = data.map((key, value) {
+          final list = (value as List)
+              .map(
+                (e) => ReferenceItem(
+                  id: e['id'],
+                  name: e['name'],
+                  info: e['info'] ?? '',
+                ),
+              )
+              .toList();
+          return MapEntry(key, list);
+        });
         _loading = false;
       });
     } catch (e) {
       setState(() => _loading = false);
+      print(e);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Помилка завантаження: $e')));
     }
   }
 
-  void _addOrEditItem(String category, {ReferenceItem? item}) {
-    final nameController = TextEditingController(text: item?.name ?? '');
-    final infoController = TextEditingController(text: item?.info ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(item == null ? 'Додати елемент' : 'Редагувати елемент'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Назва'),
-            ),
-            TextField(
-              controller: infoController,
-              decoration: const InputDecoration(labelText: 'Інформація'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Скасувати'),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (nameController.text.isEmpty) return;
-
-              if (item == null) {
-                await apiService.addItem(
-                  category,
-                  nameController.text,
-                  info: infoController.text,
-                );
-              } else {
-                // await apiService.updateItem(
-                //   category,
-                //   item.id,
-                //   nameController.text,
-                //   info: infoController.text,
-                // );
-              }
-
-              Navigator.pop(context);
-              _loadCategories();
-            },
-            child: const Text('Зберегти'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _deleteItem(String category, String itemId) async {
-    await apiService.deleteItem(category, itemId);
-    _loadCategories();
-  }
-
   Widget _buildCategory(String category, List<ReferenceItem> items) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: ExpansionTile(
-        title: Text(
-          category,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(category, style: const TextStyle(fontWeight: FontWeight.bold)),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert), // три крапки
+              onSelected: (value) {
+                if (value == 'edit') {
+                  // 🔹 Редагування категорії
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("Редагувати категорію"),
+                      content: Text("Тут редагуємо: $category"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Скасувати"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // Зберегти зміни
+                            Navigator.pop(context);
+                          },
+                          child: const Text("Зберегти"),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (value == 'delete') {
+                  // 🔹 Видалення категорії
+                  setState(() {
+                    categories.remove(category);
+                  });
+                } else if (value == 'add') {
+                  // 🔹 Додавання нового елемента
+                  // _addOrEditItem(category);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    leading: Icon(Icons.edit, color: Colors.green),
+                    title: Text("Редагувати"),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    leading: Icon(Icons.delete, color: Colors.red),
+                    title: Text("Видалити"),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'add',
+                  child: ListTile(
+                    leading: Icon(Icons.add, color: Colors.blue),
+                    title: Text("Додати елемент"),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         children: [
           for (var i = 0; i < items.length; i++)
             ListTile(
               title: Text(items[i].name),
               subtitle: items[i].info.isNotEmpty ? Text(items[i].info) : null,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _addOrEditItem(category, item: items[i]),
+              trailing: PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    // _addOrEditItem(category, item: items[i]);
+                  } else if (value == 'delete') {
+                    // _deleteItem(category, items[i].id);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      leading: Icon(Icons.edit, color: Colors.green),
+                      title: Text("Редагувати"),
+                    ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {},
-                    // onPressed: () => _deleteItem(category, items[i].id),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete, color: Colors.red),
+                      title: Text("Видалити"),
+                    ),
                   ),
                 ],
               ),
             ),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: const Text('Додати новий елемент'),
-            onTap: () => _addOrEditItem(category),
-          ),
         ],
       ),
     );
@@ -145,13 +164,35 @@ class _ReferenceScreenState extends State<ReferenceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Довідники'),
+        title: const Text('Довідники (локальні дані)'),
         backgroundColor: Colors.blue[700],
       ),
       body: ListView(
         children: categories.entries
             .map((e) => _buildCategory(e.key, e.value))
             .toList(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blue[700],
+        child: const Icon(Icons.add),
+        onPressed: () {
+          // 🔹 наприклад, можна відкрити діалог для створення нового довідника
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Додати категорію"),
+              content: const Text(
+                "Тут буде логіка для створення нового довідника",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Закрити"),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,5 +1,5 @@
 class ReferenceItem {
-  final int id;
+  final String id;
   final String name;
   final String info;
 
@@ -7,7 +7,7 @@ class ReferenceItem {
 
   factory ReferenceItem.fromJson(Map<String, dynamic> json) {
     return ReferenceItem(
-      id: json['id'] as int,
+      id: json['id'] as String,
       name: json['name'] as String,
       info: json['info']?.toString() ?? '', // щоб уникнути null
     );
