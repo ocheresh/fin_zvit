@@ -1,25 +1,19 @@
 class ReferenceItem {
-  String id;
-  String name;
-  String info; // додано поле
+  final int id;
+  final String name;
+  final String info;
 
-  ReferenceItem({
-    required this.id,
-    required this.name,
-    this.info = '', // значення за замовчуванням
-  });
+  ReferenceItem({required this.id, required this.name, required this.info});
 
   factory ReferenceItem.fromJson(Map<String, dynamic> json) {
     return ReferenceItem(
-      id: json['id'],
-      name: json['name'],
-      info: json['info'] ?? '', // якщо немає info у JSON
+      id: json['id'] as int,
+      name: json['name'] as String,
+      info: json['info']?.toString() ?? '', // щоб уникнути null
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'info': info, // додано
-  };
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'info': info};
+  }
 }

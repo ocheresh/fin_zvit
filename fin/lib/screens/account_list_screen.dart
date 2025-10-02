@@ -43,7 +43,6 @@ class _AccountListScreenState extends State<AccountListScreen> {
     final excel = ex.Excel.createExcel();
     final sheet = excel['Accounts'];
 
-    // 1️⃣ Додаємо заголовки (структура з усіма колонками)
     sheet.appendRow([
       ex.TextCellValue("Особовий рахунок"),
       ex.TextCellValue("Номер розпорядника коштів"),
@@ -53,7 +52,6 @@ class _AccountListScreenState extends State<AccountListScreen> {
       ex.TextCellValue("Додаткова інформація"),
     ]);
 
-    // 2️⃣ Додаємо дані
     for (final acc in accounts) {
       sheet.appendRow([
         ex.TextCellValue(acc.accountNumber),
@@ -67,19 +65,11 @@ class _AccountListScreenState extends State<AccountListScreen> {
       ]);
     }
 
-    // 3️⃣ Збереження
     final fileBytes = excel.save(fileName: "accounts.xlsx")!;
 
     if (kIsWeb) {
-      // Web: завантаження через браузер
-      // await FileSaver.instance.saveFile(
-      //   name: "accounts.xlsx", // ім'я файлу
-      //   bytes: Uint8List.fromList(fileBytes), // байти файлу
-      //   mimeType: MimeType.microsoftExcel, // MIME-тип
-      // );
-      print("✅ Excel збережено:");
+      print("✅ Excel збережено (web)");
     } else {
-      // Android/iOS/Desktop: збереження у Documents
       final directory = await getApplicationDocumentsDirectory();
       final filePath = "${directory.path}/accounts.xlsx";
       final file = File(filePath)
@@ -89,20 +79,14 @@ class _AccountListScreenState extends State<AccountListScreen> {
     }
   }
 
+  List<Account> _allAccounts = [];
+
   @override
   void initState() {
     super.initState();
     _loadAccounts();
     _searchController.addListener(_onSearchChanged);
   }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  List<Account> _allAccounts = [];
 
   void _loadAccounts() {
     setState(() {
@@ -143,7 +127,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
         matches = true;
       if (_filterOptions['subordination'] == true &&
           (account.subordination ?? '').toLowerCase().contains(q))
-        matches = true; // ← null-safe
+        matches = true;
       if (_filterOptions['additionalInfo'] == true &&
           account.additionalInfo.toLowerCase().contains(q))
         matches = true;
@@ -164,8 +148,6 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
     if (result is Map) {
       final ui = result['ui'] as Account;
-      // final subordinationId = result['subordinationId'] as int;
-
       await _apiService.addAccount(ui);
       _loadAccounts();
       _showSnackBar('Рахунок успішно додано');
@@ -183,8 +165,6 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
     if (result is Map) {
       final ui = result['ui'] as Account;
-      // final subordinationId = result['subordinationId'] as int;
-
       await _apiService.updateAccount(ui);
       _loadAccounts();
       _showSnackBar('Рахунок успішно оновлено');
@@ -217,7 +197,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
         _showSnackBar('Неможливо видалити: відсутній ID');
         return;
       }
-      await _apiService.deleteAccount(account.id!); // ← int!
+      await _apiService.deleteAccount(account.id!);
       _loadAccounts();
       _showSnackBar('Рахунок успішно видалено');
     }
@@ -234,25 +214,18 @@ class _AccountListScreenState extends State<AccountListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Детальна інформація'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDetailRow('Особовий рахунок', account.accountNumber),
-              _buildDetailRow(
-                'Номер розпорядника коштів',
-                account.rozporiadNumber,
-              ),
-              _buildDetailRow('Найменування', account.legalName),
-              _buildDetailRow('ЄДРПОУ', account.edrpou),
-              _buildDetailRow(
-                'Підпорядкованість',
-                account.subordination ?? '-',
-              ),
-              if (account.additionalInfo.isNotEmpty)
-                _buildDetailRow('Додаткова інформація', account.additionalInfo),
-            ],
-          ),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Особовий рахунок: ${account.accountNumber}"),
+            Text("Номер розпорядника коштів: ${account.rozporiadNumber}"),
+            Text("Найменування: ${account.legalName}"),
+            Text("ЄДРПОУ: ${account.edrpou}"),
+            Text("Підпорядкованість: ${account.subordination ?? '-'}"),
+            if (account.additionalInfo.isNotEmpty)
+              Text("Додаткова інформація: ${account.additionalInfo}"),
+          ],
         ),
         actions: [
           TextButton(
@@ -260,24 +233,6 @@ class _AccountListScreenState extends State<AccountListScreen> {
             child: const Text('Закрити'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-          children: [
-            TextSpan(
-              text: "$label: ",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            TextSpan(text: value),
-          ],
-        ),
       ),
     );
   }
@@ -334,28 +289,11 @@ class _AccountListScreenState extends State<AccountListScreen> {
         backgroundColor: Colors.blue[700],
         foregroundColor: Colors.white,
         actions: [
-          ElevatedButton(
+          IconButton(
+            icon: const Icon(Icons.file_download),
             onPressed: () async {
-              await exportAccountsToExcel(
-                await _futureAccounts,
-              ); // твоя функція експорту
+              await exportAccountsToExcel(await _futureAccounts);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green, // колір кнопки
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Excel',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
-              ),
-            ),
           ),
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -397,86 +335,92 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   if (accounts.isEmpty) {
                     return const Center(child: Text("Рахунків не знайдено"));
                   }
-                  // всередині FutureBuilder:
-                  // final accounts = _filteredAccounts;
 
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: constraints.maxWidth,
-                          ),
-                          child: DataTable(
-                            columnSpacing: 20,
-                            columns: const [
-                              DataColumn(label: Text('Особовий рахунок')),
-                              DataColumn(label: Text('№ розп-ка коштів')),
-                              DataColumn(label: Text('Найменування')),
-                              DataColumn(label: Text('ЄДРПОУ')),
-                              DataColumn(label: Text('Підпорядкованість')),
-                              DataColumn(label: Text('Додаткова інформація')),
-                              DataColumn(label: Text('Дії')),
-                            ],
-                            rows: accounts.map((account) {
-                              return DataRow(
-                                cells: [
-                                  DataCell(Text(account.accountNumber)),
-                                  DataCell(Text(account.rozporiadNumber)),
-                                  DataCell(Text(account.legalName)),
-                                  DataCell(Text(account.edrpou)),
-                                  DataCell(
-                                    Text(account.subordination ?? '-'),
-                                  ), // ← null-safe
-                                  DataCell(
-                                    SizedBox(
-                                      width: 180,
-                                      child: Text(
-                                        account.additionalInfo.isNotEmpty
-                                            ? account.additionalInfo
-                                            : "-",
-                                        overflow: TextOverflow.ellipsis,
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columnSpacing: 20,
+                      columns: const [
+                        DataColumn(label: Text('Особовий рахунок')),
+                        DataColumn(label: Text('№ розп-ка коштів')),
+                        DataColumn(label: Text('Найменування')),
+                        DataColumn(label: Text('ЄДРПОУ')),
+                        DataColumn(label: Text('Підпорядкованість')),
+                        DataColumn(label: Text('Додаткова інформація')),
+                        DataColumn(label: Text('Дії')),
+                      ],
+                      rows: accounts.map((account) {
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(account.accountNumber)),
+                            DataCell(Text(account.rozporiadNumber)),
+                            DataCell(Text(account.legalName)),
+                            DataCell(Text(account.edrpou)),
+                            DataCell(Text(account.subordination ?? '-')),
+                            DataCell(
+                              SizedBox(
+                                width: 180,
+                                child: Text(
+                                  account.additionalInfo.isNotEmpty
+                                      ? account.additionalInfo
+                                      : "-",
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              PopupMenuButton<String>(
+                                icon: const Icon(
+                                  Icons.more_vert,
+                                  color: Colors.black87,
+                                ),
+                                onSelected: (value) {
+                                  if (value == 'view') {
+                                    _showAccountDetails(account);
+                                  } else if (value == 'edit') {
+                                    _editAccount(account);
+                                  } else if (value == 'delete') {
+                                    _deleteAccount(account);
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'view',
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.visibility,
+                                        color: Colors.blue,
                                       ),
+                                      title: Text('Переглянути'),
                                     ),
                                   ),
-                                  DataCell(
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.visibility,
-                                            color: Colors.blue,
-                                          ),
-                                          onPressed: () =>
-                                              _showAccountDetails(account),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.edit,
-                                            color: Colors.green,
-                                          ),
-                                          onPressed: () =>
-                                              _editAccount(account),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                          ),
-                                          onPressed: () =>
-                                              _deleteAccount(account),
-                                        ),
-                                      ],
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.edit,
+                                        color: Colors.green,
+                                      ),
+                                      title: Text('Редагувати'),
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      title: Text('Видалити'),
                                     ),
                                   ),
                                 ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      );
-                    },
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                   );
                 } else if (snapshot.hasError) {
                   return Center(child: Text("Помилка: ${snapshot.error}"));

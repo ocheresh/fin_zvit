@@ -5,16 +5,7 @@ import 'res_prop_plan_assign_tab.dart';
 import '../../services/reference_api_service.dart';
 
 class PropBudgetTabsScreen extends StatefulWidget {
-  final int year;
-  final ReferenceItem kpkv;
-  final ReferenceItem fund;
-
-  const PropBudgetTabsScreen({
-    super.key,
-    required this.year,
-    required this.kpkv,
-    required this.fund,
-  });
+  const PropBudgetTabsScreen({super.key});
 
   @override
   State<PropBudgetTabsScreen> createState() => _PropBudgetTabsScreenState();
@@ -22,57 +13,23 @@ class PropBudgetTabsScreen extends StatefulWidget {
 
 class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
     with SingleTickerProviderStateMixin {
-  final ReferenceApiService apiService = ReferenceApiService(
-    "http://localhost:3000",
-  );
-
   late TabController _tabController;
 
   late int _selectedYear;
-  ReferenceItem? _selectedKpkv;
-  ReferenceItem? _selectedFund;
+  late String _selectedKpkv;
+  late String _selectedFund;
 
-  List<ReferenceItem> kpkvList = [];
-  List<ReferenceItem> fundList = [];
-  bool _loading = true;
-  Future<void> _loadReferences() async {
-    setState(() => _loading = true);
-    try {
-      final categories = await apiService.fetchCategories();
-      if (!mounted) return; // захист
-
-      setState(() {
-        kpkvList = categories['КПКВ'] ?? [];
-        fundList = categories['Фонд'] ?? [];
-
-        _selectedKpkv = kpkvList.isNotEmpty ? kpkvList.first : null;
-        _selectedFund = fundList.isNotEmpty ? fundList.first : null;
-
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return; // захист
-
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Помилка завантаження: $e')));
-    }
-  }
+  final List<String> kpkvList = ["2101020/4", "2101150/6"];
+  final List<String> fundList = ["Загальний", "Спеціальний"];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    _selectedYear = widget.year;
-
-    // спочатку ставимо вхідні значення
-    _selectedKpkv = widget.kpkv;
-    _selectedFund = widget.fund;
-
-    // а потім підтягуємо дані з API
-    _loadReferences();
+    _selectedYear = 2025;
+    _selectedKpkv = kpkvList.first;
+    _selectedFund = fundList.first;
   }
 
   @override
@@ -83,95 +40,132 @@ class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // Dropdown для року
-            DropdownButton<int>(
-              value: _selectedYear,
-              dropdownColor: Colors.blueGrey[900],
-              underline: const SizedBox(),
-              style: const TextStyle(color: Colors.white),
-              items: List.generate(10, (index) {
-                final year = DateTime.now().year - index;
-                return DropdownMenuItem(
-                  value: year,
-                  child: Text(year.toString()),
-                );
-              }),
-              onChanged: (val) {
-                setState(() => _selectedYear = val!);
-              },
+            Spacer(),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: Row(
+                children: [
+                  TemplateDropdown<int>(
+                    items: [2025, 2024, 2023],
+                    selectedItem: _selectedYear,
+                    itemLabel: (year) => year.toString(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedYear = val);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  TemplateDropdown<String>(
+                    items: kpkvList,
+                    selectedItem: _selectedKpkv,
+                    itemLabel: (year) => year.toString(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedKpkv = val);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  TemplateDropdown<String>(
+                    items: fundList,
+                    selectedItem: _selectedFund,
+                    itemLabel: (year) => year.toString(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedFund = val);
+                    },
+                  ),
+                ],
+              ),
             ),
-
-            const SizedBox(width: 8),
-
-            // Dropdown для КПКВ
-            DropdownButton<ReferenceItem>(
-              value: _selectedKpkv,
-              dropdownColor: Colors.blueGrey[900],
-              underline: const SizedBox(),
-              style: const TextStyle(color: Colors.white),
-              items: kpkvList.map((item) {
-                return DropdownMenuItem(value: item, child: Text(item.name));
-              }).toList(),
-              onChanged: (val) {
-                setState(() => _selectedKpkv = val);
-              },
-            ),
-
-            const SizedBox(width: 8),
-
-            // Dropdown для Фонду
-            DropdownButton<ReferenceItem>(
-              value: _selectedFund,
-              dropdownColor: Colors.blueGrey[900],
-              underline: const SizedBox(),
-              style: const TextStyle(color: Colors.white),
-              items: fundList.map((item) {
-                return DropdownMenuItem(value: item, child: Text(item.name));
-              }).toList(),
-              onChanged: (val) {
-                setState(() => _selectedFund = val);
-              },
-            ),
+            Spacer(),
           ],
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
+          // Текст і колір
+          labelColor: Colors.white, // колір активної вкладки
+          unselectedLabelColor: Colors.white70, // колір неактивних
+          labelStyle: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+          unselectedLabelStyle: const TextStyle(fontSize: 14),
+          indicatorColor: Colors.white, // колір індикатора
           indicatorWeight: 3.5,
-          labelColor: Colors.yellow,
-          unselectedLabelColor: Colors.white70,
           tabs: const [
-            Tab(text: 'Пропозиції змін до кошторису'),
-            Tab(text: 'Пропозиції'),
+            Tab(text: "Пропозиції змін"),
+            Tab(text: "Результати"),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          PropPlanAssignTab(
-            year: _selectedYear,
-            kpkv: _selectedKpkv!,
-            fund: _selectedFund!,
-            onPropozCompleted: () {
-              _tabController.animateTo(1);
-            },
+          // тут замість PropPlanAssignTab використаємо заглушку
+          Center(
+            child: Text(
+              "Рік: $_selectedYear\nКПКВ: $_selectedKpkv\nФонд: $_selectedFund",
+              textAlign: TextAlign.center,
+            ),
           ),
-          ResPropPlanPage(
-            year: _selectedYear,
-            kpkv: _selectedKpkv!.name,
-            fund: _selectedFund!.name,
+          // друга вкладка-заглушка
+          Center(
+            child: Text(
+              "Результати для $_selectedKpkv, фонд $_selectedFund",
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class TemplateDropdown<T> extends StatelessWidget {
+  final List<T> items;
+  final T selectedItem;
+  final ValueChanged<T?> onChanged;
+  final String Function(T) itemLabel; // як показувати елемент (name)
+
+  const TemplateDropdown({
+    super.key,
+    required this.items,
+    required this.selectedItem,
+    required this.onChanged,
+    required this.itemLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+      child: DropdownButton<T>(
+        value: selectedItem,
+        iconDisabledColor: Colors.white,
+        iconEnabledColor: Colors.white,
+        dropdownColor: Colors.blue,
+        underline: const SizedBox(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16.0,
+          fontWeight: FontWeight.bold,
+        ),
+        items: items
+            .map(
+              (item) => DropdownMenuItem<T>(
+                value: item,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 10.0, left: 10.0),
+                  child: Text(itemLabel(item)),
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: onChanged,
       ),
     );
   }

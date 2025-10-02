@@ -76,12 +76,12 @@ class _ReferenceScreenState extends State<ReferenceScreen> {
                   info: infoController.text,
                 );
               } else {
-                await apiService.updateItem(
-                  category,
-                  item.id,
-                  nameController.text,
-                  info: infoController.text,
-                );
+                // await apiService.updateItem(
+                //   category,
+                //   item.id,
+                //   nameController.text,
+                //   info: infoController.text,
+                // );
               }
 
               Navigator.pop(context);
@@ -121,7 +121,8 @@ class _ReferenceScreenState extends State<ReferenceScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteItem(category, items[i].id),
+                    onPressed: () {},
+                    // onPressed: () => _deleteItem(category, items[i].id),
                   ),
                 ],
               ),

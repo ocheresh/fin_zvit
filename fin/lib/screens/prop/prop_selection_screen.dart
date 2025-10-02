@@ -126,9 +126,9 @@ class _PropSelectionScreenState extends State<PropSelectionScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => PropBudgetTabsScreen(
-                              year: selectedYear,
-                              kpkv: selectedKpkv!,
-                              fund: selectedFund!,
+                              // year: selectedYear,
+                              // kpkv: selectedKpkv!,
+                              // fund: selectedFund!,
                             ),
                           ),
                         );

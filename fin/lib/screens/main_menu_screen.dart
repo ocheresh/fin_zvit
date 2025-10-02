@@ -3,6 +3,7 @@ import 'account_list_screen.dart';
 import 'reference_screen.dart';
 import 'prop/prop_selection_screen.dart';
 import 'plan/plan_selection_screen.dart';
+import 'prop/prop_budget_tabs_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -52,7 +53,8 @@ class MainMenuScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PropSelectionScreen(),
+                    // builder: (context) => PropSelectionScreen(),
+                    builder: (context) => PropBudgetTabsScreen(),
                   ),
                 );
               },
