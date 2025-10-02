@@ -7,6 +7,7 @@ import '../models/account.dart';
 import 'account_edit_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+/// Екран зі списком особових рахунків
 class AccountListScreen extends StatefulWidget {
   const AccountListScreen({super.key});
 
@@ -18,9 +19,11 @@ class _AccountListScreenState extends State<AccountListScreen> {
   late Future<List<Account>> _futureAccounts;
   final ApiService _apiService = ApiService("http://localhost:3000");
   List<Account> _filteredAccounts = [];
+  List<Account> _allAccounts = [];
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
+  /// Фільтри
   final Map<String, bool> _filterOptions = {
     'accountNumber': true,
     'rozporiadNumber': true,
@@ -30,15 +33,60 @@ class _AccountListScreenState extends State<AccountListScreen> {
     'additionalInfo': true,
   };
 
-  final Map<String, String> _filterLabels = {
-    "accountNumber": "Особовий рахунок",
-    "rozporiadNumber": "Номер розпорядника коштів",
-    "legalName": "Найменування",
-    "edrpou": "ЄДРПОУ",
-    "subordination": "Підпорядкованість",
-    "additionalInfo": "Додаткова інформація",
-  };
+  @override
+  void initState() {
+    super.initState();
+    _loadAccounts();
+    _searchController.addListener(_onSearchChanged);
+  }
 
+  /// Завантаження рахунків
+  void _loadAccounts() {
+    setState(() {
+      _futureAccounts = _apiService.fetchAccounts().then((accounts) {
+        _allAccounts = accounts;
+        _applyFilters();
+        return accounts;
+      });
+    });
+  }
+
+  /// Пошук
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text.toLowerCase();
+      _applyFilters();
+    });
+  }
+
+  void _applyFilters() {
+    if (_searchQuery.isEmpty) {
+      _filteredAccounts = List<Account>.from(_allAccounts);
+      return;
+    }
+    final q = _searchQuery;
+    _filteredAccounts = _allAccounts.where((a) {
+      return (_filterOptions['accountNumber'] == true &&
+              a.accountNumber.toLowerCase().contains(q)) ||
+          (_filterOptions['rozporiadNumber'] == true &&
+              a.rozporiadNumber.toLowerCase().contains(q)) ||
+          (_filterOptions['legalName'] == true &&
+              a.legalName.toLowerCase().contains(q)) ||
+          (_filterOptions['edrpou'] == true &&
+              a.edrpou.toLowerCase().contains(q)) ||
+          (_filterOptions['subordination'] == true &&
+              (a.subordination ?? '').toLowerCase().contains(q)) ||
+          (_filterOptions['additionalInfo'] == true &&
+              a.additionalInfo.toLowerCase().contains(q));
+    }).toList();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _onSearchChanged();
+  }
+
+  /// Експорт у Excel
   Future<void> exportAccountsToExcel(List<Account> accounts) async {
     final excel = ex.Excel.createExcel();
     final sheet = excel['Accounts'];
@@ -66,153 +114,26 @@ class _AccountListScreenState extends State<AccountListScreen> {
     }
 
     final fileBytes = excel.save(fileName: "accounts.xlsx")!;
-
     if (kIsWeb) {
       print("✅ Excel збережено (web)");
     } else {
-      final directory = await getApplicationDocumentsDirectory();
-      final filePath = "${directory.path}/accounts.xlsx";
-      final file = File(filePath)
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File("${dir.path}/accounts.xlsx")
         ..createSync(recursive: true)
         ..writeAsBytesSync(fileBytes);
-      print("✅ Excel збережено: $filePath");
+      print("✅ Excel збережено: ${file.path}");
     }
   }
 
-  List<Account> _allAccounts = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAccounts();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  void _loadAccounts() {
-    setState(() {
-      _futureAccounts = _apiService.fetchAccounts().then((accounts) {
-        _allAccounts = accounts;
-        _applyFilters();
-        return accounts;
-      });
-    });
-  }
-
-  void _onSearchChanged() {
-    setState(() {
-      _searchQuery = _searchController.text.toLowerCase();
-      _applyFilters();
-    });
-  }
-
-  void _applyFilters() {
-    if (_searchQuery.isEmpty) {
-      _filteredAccounts = List<Account>.from(_allAccounts);
-      return;
-    }
-    final q = _searchQuery;
-    _filteredAccounts = _allAccounts.where((account) {
-      bool matches = false;
-      if (_filterOptions['accountNumber'] == true &&
-          account.accountNumber.toLowerCase().contains(q))
-        matches = true;
-      if (_filterOptions['rozporiadNumber'] == true &&
-          account.rozporiadNumber.toLowerCase().contains(q))
-        matches = true;
-      if (_filterOptions['legalName'] == true &&
-          account.legalName.toLowerCase().contains(q))
-        matches = true;
-      if (_filterOptions['edrpou'] == true &&
-          account.edrpou.toLowerCase().contains(q))
-        matches = true;
-      if (_filterOptions['subordination'] == true &&
-          (account.subordination ?? '').toLowerCase().contains(q))
-        matches = true;
-      if (_filterOptions['additionalInfo'] == true &&
-          account.additionalInfo.toLowerCase().contains(q))
-        matches = true;
-      return matches;
-    }).toList();
-  }
-
-  void _clearSearch() {
-    _searchController.clear();
-    _onSearchChanged();
-  }
-
-  Future<void> _addAccount() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AccountEditScreen()),
-    );
-
-    if (result is Map) {
-      final ui = result['ui'] as Account;
-      await _apiService.addAccount(ui);
-      _loadAccounts();
-      _showSnackBar('Рахунок успішно додано');
-    }
-  }
-
-  Future<void> _editAccount(Account account) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            AccountEditScreen(account: account, isEditing: true),
-      ),
-    );
-
-    if (result is Map) {
-      final ui = result['ui'] as Account;
-      await _apiService.updateAccount(ui);
-      _loadAccounts();
-      _showSnackBar('Рахунок успішно оновлено');
-    }
-  }
-
-  Future<void> _deleteAccount(Account account) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Видалити рахунок'),
-        content: Text(
-          'Ви впевнені, що хочете видалити рахунок ${account.accountNumber}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Скасувати'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Видалити', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      if (account.id == null) {
-        _showSnackBar('Неможливо видалити: відсутній ID');
-        return;
-      }
-      await _apiService.deleteAccount(account.id!);
-      _loadAccounts();
-      _showSnackBar('Рахунок успішно видалено');
-    }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
+  /// --- Дії ---
+  void _showSnackBar(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
 
   void _showAccountDetails(Account account) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Детальна інформація'),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,48 +158,57 @@ class _AccountListScreenState extends State<AccountListScreen> {
     );
   }
 
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Налаштування фільтрів'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _filterOptions.keys.map((key) {
-                    return CheckboxListTile(
-                      title: Text(_filterLabels[key] ?? key),
-                      value: _filterOptions[key],
-                      onChanged: (value) {
-                        setDialogState(() {
-                          _filterOptions[key] = value!;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Скасувати'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _applyFilters();
-                  },
-                  child: const Text('Застосувати'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+  Future<void> _addAccount() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AccountEditScreen()),
     );
+    if (result is Map) {
+      await _apiService.addAccount(result['ui'] as Account);
+      _loadAccounts();
+      _showSnackBar('Рахунок успішно додано');
+    }
+  }
+
+  Future<void> _editAccount(Account account) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AccountEditScreen(account: account, isEditing: true),
+      ),
+    );
+    if (result is Map) {
+      await _apiService.updateAccount(result['ui'] as Account);
+      _loadAccounts();
+      _showSnackBar('Рахунок успішно оновлено');
+    }
+  }
+
+  Future<void> _deleteAccount(Account account) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Видалити рахунок'),
+        content: Text(
+          'Ви впевнені, що хочете видалити ${account.accountNumber}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Скасувати'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Видалити', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _apiService.deleteAccount(account.id!);
+      _loadAccounts();
+      _showSnackBar('Рахунок успішно видалено');
+    }
   }
 
   @override
@@ -291,37 +221,19 @@ class _AccountListScreenState extends State<AccountListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download),
-            onPressed: () async {
-              await exportAccountsToExcel(await _futureAccounts);
-            },
+            onPressed: () async => exportAccountsToExcel(await _futureAccounts),
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
-          ),
+          IconButton(icon: const Icon(Icons.filter_list), onPressed: () {}),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAccounts),
         ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Пошук рахунків',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: _clearSearch,
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
+          /// Поле пошуку
+          SearchField(
+            controller: _searchController,
+            onClear: _clearSearch,
+            query: _searchQuery,
           ),
           Expanded(
             child: FutureBuilder<List<Account>>(
@@ -331,96 +243,14 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   final accounts = _searchQuery.isEmpty
                       ? snapshot.data!
                       : _filteredAccounts;
-
-                  if (accounts.isEmpty) {
+                  if (accounts.isEmpty)
                     return const Center(child: Text("Рахунків не знайдено"));
-                  }
 
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columnSpacing: 20,
-                      columns: const [
-                        DataColumn(label: Text('Особовий рахунок')),
-                        DataColumn(label: Text('№ розп-ка коштів')),
-                        DataColumn(label: Text('Найменування')),
-                        DataColumn(label: Text('ЄДРПОУ')),
-                        DataColumn(label: Text('Підпорядкованість')),
-                        DataColumn(label: Text('Додаткова інформація')),
-                        DataColumn(label: Text('Дії')),
-                      ],
-                      rows: accounts.map((account) {
-                        return DataRow(
-                          cells: [
-                            DataCell(Text(account.accountNumber)),
-                            DataCell(Text(account.rozporiadNumber)),
-                            DataCell(Text(account.legalName)),
-                            DataCell(Text(account.edrpou)),
-                            DataCell(Text(account.subordination ?? '-')),
-                            DataCell(
-                              SizedBox(
-                                width: 180,
-                                child: Text(
-                                  account.additionalInfo.isNotEmpty
-                                      ? account.additionalInfo
-                                      : "-",
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            DataCell(
-                              PopupMenuButton<String>(
-                                icon: const Icon(
-                                  Icons.more_vert,
-                                  color: Colors.black87,
-                                ),
-                                onSelected: (value) {
-                                  if (value == 'view') {
-                                    _showAccountDetails(account);
-                                  } else if (value == 'edit') {
-                                    _editAccount(account);
-                                  } else if (value == 'delete') {
-                                    _deleteAccount(account);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'view',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.visibility,
-                                        color: Colors.blue,
-                                      ),
-                                      title: Text('Переглянути'),
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'edit',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.edit,
-                                        color: Colors.green,
-                                      ),
-                                      title: Text('Редагувати'),
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                      title: Text('Видалити'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
+                  return AccountsTable(
+                    accounts: accounts,
+                    onView: _showAccountDetails,
+                    onEdit: _editAccount,
+                    onDelete: _deleteAccount,
                   );
                 } else if (snapshot.hasError) {
                   return Center(child: Text("Помилка: ${snapshot.error}"));
@@ -436,6 +266,156 @@ class _AccountListScreenState extends State<AccountListScreen> {
         backgroundColor: Colors.blue[700],
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+/// --- Віджети ---
+
+/// Поле пошуку
+class SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onClear;
+  final String query;
+
+  const SearchField({
+    super.key,
+    required this.controller,
+    required this.onClear,
+    required this.query,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: 'Пошук рахунків',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: query.isNotEmpty
+              ? IconButton(icon: const Icon(Icons.clear), onPressed: onClear)
+              : null,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Таблиця з рахунками
+class AccountsTable extends StatelessWidget {
+  final List<Account> accounts;
+  final Function(Account) onView;
+  final Function(Account) onEdit;
+  final Function(Account) onDelete;
+
+  const AccountsTable({
+    super.key,
+    required this.accounts,
+    required this.onView,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columnSpacing: 20,
+        columns: const [
+          DataColumn(label: Text('Особовий рахунок')),
+          DataColumn(label: Text('№ розп-ка коштів')),
+          DataColumn(label: Text('Найменування')),
+          DataColumn(label: Text('ЄДРПОУ')),
+          DataColumn(label: Text('Підпорядкованість')),
+          DataColumn(label: Text('Додаткова інформація')),
+          DataColumn(label: Text('Дії')),
+        ],
+        rows: accounts.map((account) {
+          return DataRow(
+            cells: [
+              DataCell(Text(account.accountNumber)),
+              DataCell(Text(account.rozporiadNumber)),
+              DataCell(Text(account.legalName)),
+              DataCell(Text(account.edrpou)),
+              DataCell(Text(account.subordination ?? '-')),
+              DataCell(
+                SizedBox(
+                  width: 180,
+                  child: Text(
+                    account.additionalInfo.isNotEmpty
+                        ? account.additionalInfo
+                        : "-",
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              DataCell(
+                AccountActionsMenu(
+                  account: account,
+                  onView: onView,
+                  onEdit: onEdit,
+                  onDelete: onDelete,
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+/// Меню дій для рахунку
+class AccountActionsMenu extends StatelessWidget {
+  final Account account;
+  final Function(Account) onView;
+  final Function(Account) onEdit;
+  final Function(Account) onDelete;
+
+  const AccountActionsMenu({
+    super.key,
+    required this.account,
+    required this.onView,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Colors.black87),
+      onSelected: (value) {
+        if (value == 'view') onView(account);
+        if (value == 'edit') onEdit(account);
+        if (value == 'delete') onDelete(account);
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'view',
+          child: ListTile(
+            leading: Icon(Icons.visibility, color: Colors.blue),
+            title: Text('Переглянути'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: Icon(Icons.edit, color: Colors.green),
+            title: Text('Редагувати'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading: Icon(Icons.delete, color: Colors.red),
+            title: Text('Видалити'),
+          ),
+        ),
+      ],
     );
   }
 }
