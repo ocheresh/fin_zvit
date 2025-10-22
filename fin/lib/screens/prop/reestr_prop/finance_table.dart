@@ -14,6 +14,7 @@ import 'widgets/add_record_dialog.dart';
 import 'widgets/edit_record_dialog.dart';
 import 'widgets/confirm_row.dart';
 import 'widgets/row_details_dialog.dart';
+import 'widgets/calc_dialog.dart';
 
 class FinanceTableFixedScaleHighlighted extends StatefulWidget {
   const FinanceTableFixedScaleHighlighted({super.key});
@@ -288,6 +289,16 @@ class _FinanceTableFixedScaleHighlightedState
                             padH: padH,
                             calcSum: calcSum,
                             totalSum: rowTotal,
+                            onOpen: () {
+                              showCalcDialog(
+                                context,
+                                kodVydatkiv:
+                                    r['kod_vydatkiv'] ?? r['код_видатків'],
+                                osobovyiRahunok: r['osobovyi_rahunok'] ?? '',
+                                naimenuvannia: r['naimenuvannia'] ?? '',
+                                controlSum: rowTotal,
+                              );
+                            },
                           ),
 
                           // Дії з колбеками

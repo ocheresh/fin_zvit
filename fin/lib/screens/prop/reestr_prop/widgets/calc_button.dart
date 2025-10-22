@@ -8,51 +8,47 @@ Widget calcButtonCell({
   required double padH,
   required num calcSum,
   required num totalSum,
+  VoidCallback? onOpen,
 }) {
-  final Color bg = calcSum == totalSum
-      ? Colors.green.withOpacity(.18)
-      : (calcSum < totalSum
-            ? Colors.lightBlueAccent.withOpacity(.18)
-            : Colors.redAccent.withOpacity(.18));
+  final equal = calcSum == totalSum;
+  final less = calcSum < totalSum;
+  final more = calcSum > totalSum;
 
-  final double btnH = (36.0 * scale).clamp(30.0, 44.0).toDouble();
-  final String sumText = thousands(calcSum);
+  final bg = equal
+      ? Colors.green.withOpacity(.12)
+      : (less
+            ? Colors.lightBlue.withOpacity(.12)
+            : Colors.red.withOpacity(.12));
 
   return Expanded(
-    flex: kFlexMap['Розрахунки'] ?? 12,
+    flex: kFlexMap['Розрахунки'] ?? 10,
     child: Container(
-      padding: EdgeInsets.symmetric(horizontal: padH),
       decoration: const BoxDecoration(
         border: Border(
           right: BorderSide(color: Colors.black12),
           bottom: BorderSide(color: Colors.black12),
         ),
       ),
-      alignment: Alignment.center,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: btnH),
+      padding: EdgeInsets.symmetric(horizontal: padH),
+      child: Container(
+        color: bg,
+        alignment: Alignment.center,
         child: TextButton(
-          onPressed: () {},
+          onPressed: onOpen,
           style: TextButton.styleFrom(
             padding: EdgeInsets.symmetric(
-              // horizontal: padH * 0.9,
-              vertical: 6 * scale,
+              horizontal: padH,
+              vertical: 8 * scale,
             ),
-            // minimumSize: Size(0, btnH),
-            // tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            backgroundColor: bg,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero,
-            ),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Column(
-            children: [
-              Text(
-                sumText,
-                maxLines: 1,
-                style: TextStyle(fontSize: fs, fontWeight: FontWeight.w800),
-              ),
-            ],
+          child: Text(
+            thousands(calcSum),
+            style: TextStyle(
+              fontSize: fs,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
           ),
         ),
       ),
