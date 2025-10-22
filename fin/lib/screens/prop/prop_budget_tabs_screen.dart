@@ -1,3 +1,4 @@
+import 'reestr_prop/finance_table_page.dart';
 import 'package:flutter/material.dart';
 import '../../models/reference_item.dart';
 import 'package:fin/screens/prop/prop_plan_assign_tab.dart';
@@ -105,13 +106,14 @@ class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
+          FinanceTablePage(),
           // тут замість PropPlanAssignTab використаємо заглушку
-          Center(
-            child: Text(
-              "Рік: $_selectedYear\nКПКВ: $_selectedKpkv\nФонд: $_selectedFund",
-              textAlign: TextAlign.center,
-            ),
-          ),
+          // Center(
+          //   child: Text(
+          //     "Рік: $_selectedYear\nКПКВ: $_selectedKpkv\nФонд: $_selectedFund",
+          //     textAlign: TextAlign.center,
+          //   ),
+          // ),
           // друга вкладка-заглушка
           Center(
             child: Text(
