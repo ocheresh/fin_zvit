@@ -7,6 +7,8 @@ class ActionButtonsCell extends StatelessWidget {
   final double padH;
   final Color bg;
   final double rowH;
+  final VoidCallback? onEdit; // ⬅️ нове
+  final VoidCallback? onDelete; // ⬅️ нове
 
   const ActionButtonsCell({
     super.key,
@@ -16,6 +18,8 @@ class ActionButtonsCell extends StatelessWidget {
     required this.padH,
     required this.bg,
     required this.rowH,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -36,9 +40,9 @@ class ActionButtonsCell extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, cc) {
               final availableW = cc.maxWidth;
-
               const fullThreshold = 220.0;
               const compactThreshold = 160.0;
+
               final isFull = availableW >= fullThreshold;
               final isCompact = !isFull && availableW >= compactThreshold;
 
@@ -55,44 +59,60 @@ class ActionButtonsCell extends StatelessWidget {
               if (isFull) {
                 return Row(
                   children: [
-                    _ScaledTextButton(
-                      icon: Icons.edit_outlined,
-                      label: 'Редагувати',
-                      iconSize: iconSize,
-                      textSize: fs,
+                    TextButton.icon(
                       style: btnStyle,
-                      onPressed: () {},
+                      onPressed: onEdit,
+                      icon: Icon(Icons.edit_outlined, size: iconSize),
+                      label: Text(
+                        'Редагувати',
+                        style: TextStyle(
+                          fontSize: fs,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    _ScaledTextButton(
-                      icon: Icons.delete_outline,
-                      label: 'Видалити',
-                      iconSize: iconSize,
-                      textSize: fs,
+                    TextButton.icon(
                       style: btnStyle,
-                      onPressed: () {},
+                      onPressed: onDelete,
+                      icon: Icon(Icons.delete_outline, size: iconSize),
+                      label: Text(
+                        'Видалити',
+                        style: TextStyle(
+                          fontSize: fs,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 );
               } else if (isCompact) {
                 return Row(
                   children: [
-                    _ScaledTextButton(
-                      icon: Icons.edit_outlined,
-                      label: 'Ред.',
-                      iconSize: iconSize,
-                      textSize: fs,
+                    TextButton.icon(
                       style: btnStyle,
-                      onPressed: () {},
+                      onPressed: onEdit,
+                      icon: Icon(Icons.edit_outlined, size: iconSize),
+                      label: Text(
+                        'Ред.',
+                        style: TextStyle(
+                          fontSize: fs,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 4),
-                    _ScaledTextButton(
-                      icon: Icons.delete_outline,
-                      label: 'Видал.',
-                      iconSize: iconSize,
-                      textSize: fs,
+                    TextButton.icon(
                       style: btnStyle,
-                      onPressed: () {},
+                      onPressed: onDelete,
+                      icon: Icon(Icons.delete_outline, size: iconSize),
+                      label: Text(
+                        'Видал.',
+                        style: TextStyle(
+                          fontSize: fs,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -102,13 +122,13 @@ class ActionButtonsCell extends StatelessWidget {
                     const Spacer(),
                     IconButton(
                       tooltip: 'Редагувати',
-                      onPressed: () {},
+                      onPressed: onEdit,
                       icon: Icon(Icons.edit_outlined, size: iconSize),
+                      padding: EdgeInsets.zero,
                       visualDensity: const VisualDensity(
                         horizontal: -3,
                         vertical: -3,
                       ),
-                      padding: EdgeInsets.zero,
                       constraints: BoxConstraints.tight(
                         Size(iconSize + 12, rowH * 0.82),
                       ),
@@ -116,13 +136,13 @@ class ActionButtonsCell extends StatelessWidget {
                     const Spacer(),
                     IconButton(
                       tooltip: 'Видалити',
-                      onPressed: () {},
+                      onPressed: onDelete,
                       icon: Icon(Icons.delete_outline, size: iconSize),
+                      padding: EdgeInsets.zero,
                       visualDensity: const VisualDensity(
                         horizontal: -3,
                         vertical: -3,
                       ),
-                      padding: EdgeInsets.zero,
                       constraints: BoxConstraints.tight(
                         Size(iconSize + 12, rowH * 0.82),
                       ),
@@ -132,46 +152,6 @@ class ActionButtonsCell extends StatelessWidget {
                 );
               }
             },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ScaledTextButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final double iconSize;
-  final double textSize;
-  final ButtonStyle style;
-  final VoidCallback onPressed;
-
-  const _ScaledTextButton({
-    required this.icon,
-    required this.label,
-    required this.iconSize,
-    required this.textSize,
-    required this.style,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      style: style,
-      onPressed: onPressed,
-      icon: Icon(icon, size: iconSize),
-      label: SizedBox(
-        height: textSize + 6,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            label,
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(fontSize: textSize, fontWeight: FontWeight.w600),
           ),
         ),
       ),
