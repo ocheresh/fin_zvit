@@ -15,6 +15,7 @@ import 'widgets/edit_record_dialog.dart';
 import 'widgets/confirm_row.dart';
 import 'widgets/row_details_dialog.dart';
 import 'widgets/calc_dialog.dart';
+import 'widgets/month_picker_dialog.dart';
 
 class FinanceTableFixedScaleHighlighted extends StatefulWidget {
   const FinanceTableFixedScaleHighlighted({super.key});
@@ -30,10 +31,13 @@ class _FinanceTableFixedScaleHighlightedState
   List<Map<String, dynamic>> _allRows = [];
 
   final Map<String, String> _filters = {for (final h in kFinanceHeaders) h: ''};
+  late List<bool> _showMonth; // 12 прапорців для 1..12
 
   @override
   void initState() {
     super.initState();
+    final m = DateTime.now().month; // 1..12
+    _showMonth = List.generate(12, (i) => (i + 1) >= m); // показуємо m..12
     _rowsF = _load();
   }
 
@@ -99,10 +103,6 @@ class _FinanceTableFixedScaleHighlightedState
     }
   }
 
-  void _deleteRecord(int index) {
-    setState(() => _allRows.removeAt(index));
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -148,7 +148,6 @@ class _FinanceTableFixedScaleHighlightedState
                   context,
                 ).colorScheme.onPrimary.withOpacity(0.9),
               ),
-
               body: Column(
                 children: [
                   // Підсумки
@@ -160,51 +159,146 @@ class _FinanceTableFixedScaleHighlightedState
                     totals: totals,
                   ),
 
-                  // Шапка
-                  Container(
-                    height: headerH,
-                    decoration: BoxDecoration(color: headerHighlight),
-                    child: Row(
-                      children: kFinanceHeaders.map((h) {
-                        return Expanded(
-                          flex: kFlexMap[h] ?? 6,
-                          child: Container(
-                            height: headerH,
-                            padding: EdgeInsets.symmetric(horizontal: padH),
-                            alignment: Alignment.centerLeft,
-                            decoration: const BoxDecoration(
-                              border: Border(
-                                right: BorderSide(color: Colors.black12),
-                                bottom: BorderSide(
-                                  color: Colors.black26,
-                                  width: 1.2,
-                                ),
-                              ),
-                            ),
-                            child: fitTextBold(h, fsHead),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-
-                  // Рядок фільтрів
+                  // Рядок фільтрів (передаємо visibleMonths)
                   FilterRow(
                     scale: scale,
                     padH: padH,
                     fs: fsBody,
                     current: _filters,
                     allRows: rows,
+                    visibleMonths: _showMonth, // ⬅️ важливо
                     onChanged: (col, val) =>
                         setState(() => _filters[col] = val),
                     onClearAll: () {
                       setState(() {
                         for (final h in kFinanceHeaders) {
-                          if (h == 'Дії' || h == 'Розрахунки') continue;
+                          // «Дії» не фільтруємо, «Розрахунки» залишили з фільтром — якщо у вас без фільтра, додайте умову
                           _filters[h] = '';
                         }
                       });
-                    }, // ⬅️ ось ця кнопка скидає усе
+                    },
+                  ),
+
+                  // Шапка (видимість місяців врахована)
+                  Container(
+                    height: headerH,
+                    decoration: BoxDecoration(color: headerHighlight),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              // Фіксовані колонки
+                              for (final h in [
+                                'Особовий рахунок',
+                                'Найменування',
+                                'Код видатків',
+                                'Всього',
+                              ])
+                                Expanded(
+                                  flex: kFlexMap[h] ?? 6,
+                                  child: Container(
+                                    height: headerH,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: padH,
+                                    ),
+                                    alignment: Alignment.centerLeft,
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        right: BorderSide(
+                                          color: Colors.black12,
+                                        ),
+                                        bottom: BorderSide(
+                                          color: Colors.black26,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                    ),
+                                    child: fitTextBold(h, fsHead),
+                                  ),
+                                ),
+                              // Місячні колонки з урахуванням _showMonth
+                              for (int i = 0; i < 12; i++)
+                                if (_showMonth[i])
+                                  Expanded(
+                                    flex: kFlexMap['${i + 1}'] ?? 6,
+                                    child: Container(
+                                      height: headerH,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: padH,
+                                      ),
+                                      alignment: Alignment.centerLeft,
+                                      decoration: const BoxDecoration(
+                                        border: Border(
+                                          right: BorderSide(
+                                            color: Colors.black12,
+                                          ),
+                                          bottom: BorderSide(
+                                            color: Colors.black26,
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                      child: fitTextBold('${i + 1}', fsHead),
+                                    ),
+                                  ),
+                              // Решта фіксованих
+                              for (final h in [
+                                'Примітка',
+                                'Номер пропозиції',
+                                'Розрахунки',
+                                'Дії',
+                              ])
+                                Expanded(
+                                  flex: kFlexMap[h] ?? 6,
+                                  child: Container(
+                                    height: headerH,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: padH,
+                                    ),
+                                    alignment: Alignment.centerLeft,
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        right: BorderSide(
+                                          color: Colors.black12,
+                                        ),
+                                        bottom: BorderSide(
+                                          color: Colors.black26,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                    ),
+                                    child: fitTextBold(h, fsHead),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        // Кнопка керування колонками
+                        IconButton(
+                          tooltip: 'Колонки',
+                          icon: const Icon(Icons.view_column),
+                          onPressed: () async {
+                            final updated = await showDialog<List<bool>>(
+                              context: context,
+                              builder: (_) =>
+                                  MonthPickerDialog(current: _showMonth),
+                            );
+                            if (updated != null) {
+                              setState(() {
+                                _showMonth = updated;
+                                // очистити фільтри для прихованих місяців
+                                for (int i = 0; i < 12; i++) {
+                                  if (!_showMonth[i]) {
+                                    _filters['${i + 1}'] = '';
+                                  }
+                                }
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ),
 
                   // Тіло
@@ -217,7 +311,7 @@ class _FinanceTableFixedScaleHighlightedState
                             (r['m'] as List?)?.cast<num>() ??
                             List<num>.filled(12, 0);
                         final rowTotal = months.fold<num>(0, (a, b) => a + b);
-                        final calcSum = rowTotal; // завжди з місяців
+                        final calcSum = rowTotal; // з місяців
 
                         String fmt(num? v) =>
                             (v == null || v == 0) ? '' : thousands(v);
@@ -244,7 +338,6 @@ class _FinanceTableFixedScaleHighlightedState
                             padH,
                             Colors.transparent,
                           ),
-
                           highlightedCell(
                             fmt(rowTotal),
                             'Всього',
@@ -254,17 +347,17 @@ class _FinanceTableFixedScaleHighlightedState
                             alignRight: true,
                           ),
 
-                          ...List.generate(12, (m) {
-                            final v = m < months.length ? months[m] : 0;
-                            return highlightedCell(
-                              fmt(v),
-                              '${m + 1}',
-                              fsBody,
-                              padH,
-                              Colors.transparent,
-                              alignRight: true,
-                            );
-                          }),
+                          // Місяці з урахуванням видимості
+                          for (int m = 0; m < 12; m++)
+                            if (_showMonth[m])
+                              highlightedCell(
+                                fmt(m < months.length ? months[m] : 0),
+                                '${m + 1}',
+                                fsBody,
+                                padH,
+                                Colors.transparent,
+                                alignRight: true,
+                              ),
 
                           highlightedCell(
                             '${r['prymitka'] ?? ''}',
@@ -282,7 +375,7 @@ class _FinanceTableFixedScaleHighlightedState
                             alignRight: true,
                           ),
 
-                          // Розрахунки (кнопка)
+                          // Розрахунки (кнопка з сумою)
                           calcButtonCell(
                             scale: scale,
                             fs: fsBody,
@@ -301,7 +394,7 @@ class _FinanceTableFixedScaleHighlightedState
                             },
                           ),
 
-                          // Дії з колбеками
+                          // Дії
                           ActionButtonsCell(
                             flex: kFlexMap['Дії'] ?? 12,
                             fs: fsBody,
@@ -310,10 +403,8 @@ class _FinanceTableFixedScaleHighlightedState
                             bg: Colors.transparent,
                             rowH: rowH,
                             onEdit: () => _editRecord(_allRows.indexOf(r), r),
-                            onDelete: () => _confirmDelete(
-                              _allRows.indexOf(r),
-                              r,
-                            ), // ⬅️ підтвердження
+                            onDelete: () =>
+                                _confirmDelete(_allRows.indexOf(r), r),
                           ),
                         ];
 
@@ -336,3 +427,61 @@ class _FinanceTableFixedScaleHighlightedState
     );
   }
 }
+
+// /// Діалог вибору видимих місяців 1..12
+// class _MonthPickerDialog extends StatefulWidget {
+//   final List<bool> current;
+//   const _MonthPickerDialog({required this.current});
+
+//   @override
+//   State<_MonthPickerDialog> createState() => _MonthPickerDialogState();
+// }
+
+// class _MonthPickerDialogState extends State<_MonthPickerDialog> {
+//   late List<bool> sel;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     sel = List<bool>.from(widget.current);
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return AlertDialog(
+//       title: const Text('Вибір місяців'),
+//       content: SizedBox(
+//         width: 420,
+//         child: Wrap(
+//           spacing: 8,
+//           runSpacing: 8,
+//           children: List.generate(12, (i) {
+//             final label = '${i + 1}';
+//             return FilterChip(
+//               selected: sel[i],
+//               label: Text(label),
+//               onSelected: (v) => setState(() => sel[i] = v),
+//             );
+//           }),
+//         ),
+//       ),
+//       actions: [
+//         TextButton(
+//           onPressed: () => Navigator.pop(context),
+//           child: const Text('Скасувати'),
+//         ),
+//         TextButton(
+//           onPressed: () {
+//             // гарантуємо, що хоч один місяць увімкнено
+//             if (!sel.contains(true)) {
+//               final m = DateTime.now().month;
+//               sel[m - 1] = true;
+//             }
+//             Navigator.pop(context, sel);
+//           },
+//           child: const Text('Застосувати'),
+//         ),
+//       ],
+//     );
+//   }
+// }

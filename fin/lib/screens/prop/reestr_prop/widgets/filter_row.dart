@@ -14,6 +14,9 @@ class FilterRow extends StatelessWidget {
   final List<Map<String, dynamic>> allRows;
   final VoidCallback onClearAll;
 
+  /// Видимість місяців 1..12; якщо null — вважаємо, що всі 12 видимі.
+  final List<bool>? visibleMonths;
+
   const FilterRow({
     super.key,
     required this.scale,
@@ -23,11 +26,15 @@ class FilterRow extends StatelessWidget {
     required this.onChanged,
     required this.allRows,
     required this.onClearAll,
+    this.visibleMonths,
   });
 
   @override
   Widget build(BuildContext context) {
     final chipStyle = TextStyle(fontSize: fs);
+    final monthVisible = (visibleMonths == null || visibleMonths!.length != 12)
+        ? List<bool>.filled(12, true)
+        : visibleMonths!;
 
     // є активні фільтри (усі, окрім «Дії»)
     final hasActiveFilters = current.entries.any(
@@ -35,7 +42,7 @@ class FilterRow extends StatelessWidget {
     );
 
     Widget cell(String h) {
-      // Під «Дії» – лише іконка "скинути всі"
+      // «Дії» — тільки кнопка "Скинути всі"
       if (h == 'Дії') {
         return Expanded(
           flex: kFlexMap[h] ?? 6,
@@ -57,7 +64,15 @@ class FilterRow extends StatelessWidget {
         );
       }
 
-      // «Розрахунки» — тепер теж фільтруємо (як інші)
+      // якщо це один із місяців і він прихований — нічого не рендеримо
+      final monthIndex = int.tryParse(h); // 1..12 або null
+      if (monthIndex != null) {
+        final mi = monthIndex - 1; // 0..11
+        if (mi < 0 || mi > 11 || !monthVisible[mi]) {
+          return const SizedBox.shrink();
+        }
+      }
+
       final value = (current[h] ?? '').trim();
       final has = value.isNotEmpty;
 
@@ -72,7 +87,7 @@ class FilterRow extends StatelessWidget {
             onTap: () async {
               // Будуємо допустимі значення з урахуванням інших фільтрів
               final scoped = Map<String, String>.from(current);
-              scoped[h] = ''; // поточний – тимчасово прибираємо
+              scoped[h] = ''; // поточний — тимчасово прибираємо
               final rowsScope = applyFilters(allRows, scoped);
 
               await showFilterPicker(
@@ -132,11 +147,24 @@ class FilterRow extends StatelessWidget {
       );
     }
 
+    // Будуємо рядок у фіксованому порядку з constants, але пропускаємо приховані місяці
+    final children = <Widget>[];
+    for (final h in kFinanceHeaders) {
+      final monthIndex = int.tryParse(h);
+      if (monthIndex != null) {
+        final mi = monthIndex - 1;
+        if (mi < 0 || mi > 11 || !monthVisible[mi]) {
+          continue; // пропускаємо фільтр прихованого місяця
+        }
+      }
+      children.add(cell(h));
+    }
+
     return Container(
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.black26, width: 1)),
       ),
-      child: Row(children: kFinanceHeaders.map(cell).toList()),
+      child: Row(children: children),
     );
   }
 }
