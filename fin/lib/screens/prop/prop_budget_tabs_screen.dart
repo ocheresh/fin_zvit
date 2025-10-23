@@ -1,5 +1,7 @@
 import 'reestr_prop/finance_table_page.dart';
 import 'package:flutter/material.dart';
+import 'rozrah_prop/proposal_calc_page.dart';
+import 'druk_prop/druk_propoz_page.dart';
 import '../../models/reference_item.dart';
 import 'package:fin/screens/prop/prop_plan_assign_tab.dart';
 import 'res_prop_plan_assign_tab.dart';
@@ -26,7 +28,7 @@ class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
 
     _selectedYear = 2025;
     _selectedKpkv = kpkvList.first;
@@ -99,7 +101,8 @@ class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
           indicatorWeight: 3.5,
           tabs: const [
             Tab(text: "Пропозиції змін"),
-            Tab(text: "Результати"),
+            Tab(text: "Розрахунки до пропозицій"),
+            Tab(text: "Друк"),
           ],
         ),
       ),
@@ -107,20 +110,17 @@ class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
         controller: _tabController,
         children: [
           FinanceTablePage(),
-          // тут замість PropPlanAssignTab використаємо заглушку
+
+          ProposalCalcPage(),
+
+          DrukPropozPage(),
+
           // Center(
           //   child: Text(
-          //     "Рік: $_selectedYear\nКПКВ: $_selectedKpkv\nФонд: $_selectedFund",
+          //     "Друк за $_selectedKpkv, фонд $_selectedFund",
           //     textAlign: TextAlign.center,
           //   ),
           // ),
-          // друга вкладка-заглушка
-          Center(
-            child: Text(
-              "Результати для $_selectedKpkv, фонд $_selectedFund",
-              textAlign: TextAlign.center,
-            ),
-          ),
         ],
       ),
     );

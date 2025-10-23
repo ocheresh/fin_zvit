@@ -1,0 +1,82 @@
+[
+  {
+    "osobovyiRahunok": "50212",
+    "naimenuvannia": "А0135",
+    "kodVydatkiv": "2210.030/4",
+    "naimenVytrat": "Матеріали",
+    "odVymiru": "шт.",
+    "kilkist": 150.0,
+    "tsinaZaOdynts": 58.30,
+    "nomerPropozytsii": "105"
+  },
+  {
+    "osobovyiRahunok": "50007",
+    "naimenuvannia": "ВІТІ",
+    "kodVydatkiv": "2210",
+    "naimenVytrat": "ПММ",
+    "odVymiru": "л",
+    "kilkist": 20.0,
+    "tsinaZaOdynts": 220.00,
+    "nomerPropozytsii": "105"
+  },
+  {
+    "osobovyiRahunok": "2620002",
+    "naimenuvannia": "Папір А4",
+    "kodVydatkiv": "2210",
+    "naimenVytrat": "Канцелярські товари",
+    "odVymiru": "пач",
+    "kilkist": 30.0,
+    "tsinaZaOdynts": 185.50,
+    "nomerPropozytsii": "105"
+  },
+  {
+    "osobovyiRahunok": "2620003",
+    "naimenuvannia": "Послуги зв’язку",
+    "kodVydatkiv": "2240",
+    "naimenVytrat": "Послуги зв’язку та інтернет",
+    "odVymiru": "міс",
+    "kilkist": 3.0,
+    "tsinaZaOdynts": 950.00,
+    "nomerPropozytsii": "106"
+  },
+    {
+    "osobovyiRahunok": "50212",
+    "naimenuvannia": "А0135",
+    "kodVydatkiv": "2210.030/4",
+    "naimenVytrat": "Матеріали",
+    "odVymiru": "шт.",
+    "kilkist": 150.0,
+    "tsinaZaOdynts": 58.30,
+    "nomerPropozytsii": "105"
+  },
+  {
+    "osobovyiRahunok": "50007",
+    "naimenuvannia": "ВІТІ",
+    "kodVydatkiv": "2210",
+    "naimenVytrat": "ПММ",
+    "odVymiru": "л",
+    "kilkist": 20.0,
+    "tsinaZaOdynts": 220.00,
+    "nomerPropozytsii": "105"
+  },
+  {
+    "osobovyiRahunok": "2620002",
+    "naimenuvannia": "Папір А4",
+    "kodVydatkiv": "2210",
+    "naimenVytrat": "Канцелярські товари",
+    "odVymiru": "пач",
+    "kilkist": 30.0,
+    "tsinaZaOdynts": 185.50,
+    "nomerPropozytsii": "105"
+  },
+  {
+    "osobovyiRahunok": "2620003",
+    "naimenuvannia": "Послуги зв’язку",
+    "kodVydatkiv": "2240",
+    "naimenVytrat": "Послуги зв’язку та інтернет",
+    "odVymiru": "міс",
+    "kilkist": 3.0,
+    "tsinaZaOdynts": 950.00,
+    "nomerPropozytsii": "106"
+  }
+]
