@@ -166,16 +166,31 @@ class _FinanceTableFixedScaleHighlightedState
                     fs: fsBody,
                     current: _filters,
                     allRows: rows,
-                    visibleMonths: _showMonth, // ⬅️ важливо
+                    visibleMonths: _showMonth,
                     onChanged: (col, val) =>
                         setState(() => _filters[col] = val),
                     onClearAll: () {
                       setState(() {
                         for (final h in kFinanceHeaders) {
-                          // «Дії» не фільтруємо, «Розрахунки» залишили з фільтром — якщо у вас без фільтра, додайте умову
                           _filters[h] = '';
                         }
                       });
+                    },
+                    onOpenColumns: () async {
+                      // ⬅️ тепер кнопка тут
+                      final updated = await showDialog<List<bool>>(
+                        context: context,
+                        builder: (_) => MonthPickerDialog(current: _showMonth),
+                      );
+                      if (updated != null) {
+                        setState(() {
+                          _showMonth = updated;
+                          // очистити фільтри для прихованих місяців
+                          for (int i = 0; i < 12; i++) {
+                            if (!_showMonth[i]) _filters['${i + 1}'] = '';
+                          }
+                        });
+                      }
                     },
                   ),
 
@@ -273,29 +288,6 @@ class _FinanceTableFixedScaleHighlightedState
                                 ),
                             ],
                           ),
-                        ),
-                        // Кнопка керування колонками
-                        IconButton(
-                          tooltip: 'Колонки',
-                          icon: const Icon(Icons.view_column),
-                          onPressed: () async {
-                            final updated = await showDialog<List<bool>>(
-                              context: context,
-                              builder: (_) =>
-                                  MonthPickerDialog(current: _showMonth),
-                            );
-                            if (updated != null) {
-                              setState(() {
-                                _showMonth = updated;
-                                // очистити фільтри для прихованих місяців
-                                for (int i = 0; i < 12; i++) {
-                                  if (!_showMonth[i]) {
-                                    _filters['${i + 1}'] = '';
-                                  }
-                                }
-                              });
-                            }
-                          },
                         ),
                       ],
                     ),

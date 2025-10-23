@@ -13,9 +13,10 @@ class FilterRow extends StatelessWidget {
   final OnFilterChanged onChanged;
   final List<Map<String, dynamic>> allRows;
   final VoidCallback onClearAll;
-
-  /// Видимість місяців 1..12; якщо null — вважаємо, що всі 12 видимі.
   final List<bool>? visibleMonths;
+
+  /// виклик діалогу керування видимістю колонок
+  final VoidCallback? onOpenColumns;
 
   const FilterRow({
     super.key,
@@ -27,6 +28,7 @@ class FilterRow extends StatelessWidget {
     required this.allRows,
     required this.onClearAll,
     this.visibleMonths,
+    this.onOpenColumns,
   });
 
   @override
@@ -36,38 +38,110 @@ class FilterRow extends StatelessWidget {
         ? List<bool>.filled(12, true)
         : visibleMonths!;
 
-    // є активні фільтри (усі, окрім «Дії»)
     final hasActiveFilters = current.entries.any(
       (e) => e.key != 'Дії' && e.value.trim().isNotEmpty,
     );
 
-    Widget cell(String h) {
-      // «Дії» — тільки кнопка "Скинути всі"
-      if (h == 'Дії') {
-        return Expanded(
-          flex: kFlexMap[h] ?? 6,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: padH / 2,
-              vertical: 6 * scale,
-            ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                tooltip: 'Скинути всі фільтри',
-                onPressed: hasActiveFilters ? onClearAll : null,
-                icon: const Icon(Icons.filter_alt_off),
-                splashRadius: (18 * scale).clamp(16, 22).toDouble(),
-              ),
-            ),
+    Widget actionsCell() {
+      return Expanded(
+        flex: kFlexMap['Дії'] ?? 6,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: padH / 2,
+            vertical: 6 * scale,
           ),
-        );
-      }
+          child: LayoutBuilder(
+            builder: (context, cc) {
+              final w = cc.maxWidth;
+              final splash = (18 * scale).clamp(14, 22).toDouble();
 
-      // якщо це один із місяців і він прихований — нічого не рендеримо
-      final monthIndex = int.tryParse(h); // 1..12 або null
+              // дуже мало місця — одна кнопка-меню
+              if (w < 90) {
+                return Align(
+                  alignment: Alignment.centerLeft,
+                  child: PopupMenuButton<_ActionItem>(
+                    tooltip: 'Дії',
+                    itemBuilder: (ctx) => [
+                      PopupMenuItem(
+                        value: _ActionItem.columns,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.view_column, size: 18),
+                            SizedBox(width: 8),
+                            Text('Колонки'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        enabled: hasActiveFilters,
+                        value: _ActionItem.clear,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.filter_alt_off, size: 18),
+                            SizedBox(width: 8),
+                            Text('Скинути фільтри'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onSelected: (it) {
+                      switch (it) {
+                        case _ActionItem.columns:
+                          onOpenColumns?.call();
+                          break;
+                        case _ActionItem.clear:
+                          if (hasActiveFilters) onClearAll();
+                          break;
+                      }
+                    },
+                    child: IconButton(
+                      icon: const Icon(Icons.more_horiz),
+                      onPressed: null, // іконка слугує тригером PopupMenu
+                      // ignore: deprecated_member_use
+                      splashRadius: splash,
+                    ),
+                  ),
+                );
+              }
+
+              // достатньо місця — дві окремі іконки
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Колонки',
+                      onPressed: onOpenColumns,
+                      icon: const Icon(Icons.view_column),
+                      splashRadius: splash,
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: 'Скинути всі фільтри',
+                      onPressed: hasActiveFilters ? onClearAll : null,
+                      icon: const Icon(Icons.filter_alt_off),
+                      splashRadius: splash,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    Widget filterCell(String h) {
+      // для «Дії» — спец-комірка
+      if (h == 'Дії') return actionsCell();
+
+      // пропускаємо приховані місяці
+      final monthIndex = int.tryParse(h);
       if (monthIndex != null) {
-        final mi = monthIndex - 1; // 0..11
+        final mi = monthIndex - 1;
         if (mi < 0 || mi > 11 || !monthVisible[mi]) {
           return const SizedBox.shrink();
         }
@@ -85,9 +159,9 @@ class FilterRow extends StatelessWidget {
           ),
           child: InkWell(
             onTap: () async {
-              // Будуємо допустимі значення з урахуванням інших фільтрів
+              // формуємо допустимі значення з урахуванням інших фільтрів
               final scoped = Map<String, String>.from(current);
-              scoped[h] = ''; // поточний — тимчасово прибираємо
+              scoped[h] = '';
               final rowsScope = applyFilters(allRows, scoped);
 
               await showFilterPicker(
@@ -112,12 +186,12 @@ class FilterRow extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(Icons.filter_list, size: fs + 2),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 2),
                   Expanded(
                     child: Text(
                       has ? value : 'фільтр…',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      overflow: TextOverflow.clip,
                       style: chipStyle.copyWith(
                         color: has
                             ? Theme.of(context).colorScheme.onSurface
@@ -134,10 +208,15 @@ class FilterRow extends StatelessWidget {
                       icon: Icon(Icons.clear, size: fs + 2),
                       onPressed: () => onChanged(h, ''),
                       padding: EdgeInsets.zero,
-                      visualDensity: const VisualDensity(
-                        horizontal: -3,
-                        vertical: -3,
+                      constraints: const BoxConstraints(
+                        minWidth: 24,
+                        minHeight: 24,
                       ),
+                      visualDensity: const VisualDensity(
+                        horizontal: -4,
+                        vertical: -4,
+                      ),
+                      splashRadius: 14,
                     ),
                 ],
               ),
@@ -147,17 +226,15 @@ class FilterRow extends StatelessWidget {
       );
     }
 
-    // Будуємо рядок у фіксованому порядку з constants, але пропускаємо приховані місяці
+    // будуємо у фіксованому порядку, пропускаючи приховані місяці
     final children = <Widget>[];
     for (final h in kFinanceHeaders) {
       final monthIndex = int.tryParse(h);
       if (monthIndex != null) {
         final mi = monthIndex - 1;
-        if (mi < 0 || mi > 11 || !monthVisible[mi]) {
-          continue; // пропускаємо фільтр прихованого місяця
-        }
+        if (mi < 0 || mi > 11 || !(monthVisible[mi])) continue;
       }
-      children.add(cell(h));
+      children.add(filterCell(h));
     }
 
     return Container(
@@ -168,3 +245,5 @@ class FilterRow extends StatelessWidget {
     );
   }
 }
+
+enum _ActionItem { columns, clear }
