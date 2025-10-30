@@ -2,7 +2,7 @@ import 'reestr_prop/finance_table_page.dart';
 import 'package:flutter/material.dart';
 import 'rozrah_prop/proposal_calc_page.dart';
 import 'druk_prop/druk_propoz_page.dart';
-import '../../models/reference_item.dart';
+import '../../core/models/reference_item.dart';
 import 'package:fin/screens/prop/prop_plan_assign_tab.dart';
 import 'res_prop_plan_assign_tab.dart';
 import '../../services/reference_api_service.dart';

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/prop_plan_assign.dart';
+import '../core/models/prop_plan_assign.dart';
 
 /// Сервіс для роботи з пропозиціями до плану асигнувань.
 /// Використовує параметри: рік, КПКВ та фонд — для збереження і завантаження окремих файлів.

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "rGEPhmSC",
+    "accountNumber": "50508",
+    "rozporiadNumber": "17335",
+    "legalName": "Військова частина А4619",
+    "edrpou": "00000000",
+    "subordination": "Інше",
+    "additionalInfo": ""
+  },
+  {
+    "id": "MpPGpnvo",
+    "accountNumber": "50506",
+    "rozporiadNumber": "01007",
+    "legalName": "Військова частина А3309",
+    "edrpou": "00000000",
+    "subordination": "Інше",
+    "additionalInfo": ""
+  },
+  {
+    "id": "UldEsRhd",
+    "accountNumber": "50541",
+    "rozporiadNumber": "00712",
+    "legalName": "Військово-медичний клінічний центр Західного регіону",
+    "edrpou": "00000000",
+    "subordination": "КМС",
+    "additionalInfo": ""
+  },
+  {
+    "id": "1OBCa-sd",
+    "accountNumber": "56001",
+    "rozporiadNumber": "02003",
+    "legalName": "Командування ПС ЗСУ (в/ч) А0215",
+    "edrpou": "00000000",
+    "subordination": "КПС",
+    "additionalInfo": ""
+  },
+  {
+    "id": "v-n61aHt",
+    "accountNumber": "50200",
+    "rozporiadNumber": "07232",
+    "legalName": "Військова частина А0139",
+    "edrpou": "00000000",
+    "subordination": "Інше",
+    "additionalInfo": ""
+  }
+]

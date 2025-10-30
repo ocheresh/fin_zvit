@@ -1,0 +1,11 @@
+{
+  "name": "accounts-backend-v2",
+  "type": "module",
+  "scripts": { "start": "node src/server.js" },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "nanoid": "^4.0.0"
+  }
+}

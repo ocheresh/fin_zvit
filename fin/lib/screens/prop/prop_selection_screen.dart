@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/reference_api_service.dart';
-import '../../models/reference_item.dart';
+import '../../core/models/reference_item.dart';
 import 'prop_budget_tabs_screen.dart';
 
 class PropSelectionScreen extends StatefulWidget {

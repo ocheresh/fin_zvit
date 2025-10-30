@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../../core/api/api_service.dart';
 import '../../services/reference_api_service.dart';
-import '../../models/reference_item.dart';
-import '../../models/account.dart';
+import '../../core/models/reference_item.dart';
+import '../../core/models/account.dart';
 
 class PlanAssignTab extends StatefulWidget {
   const PlanAssignTab({super.key});
@@ -83,7 +83,7 @@ class _PlanAssignTabState extends State<PlanAssignTab> {
     Account? selectedAccount;
 
     try {
-      accounts = await apiService.fetchAccounts();
+      // accounts = await apiService.fetchAccounts();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Помилка завантаження акаунтів: $e")),

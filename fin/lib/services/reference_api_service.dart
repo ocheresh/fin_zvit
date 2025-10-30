@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/reference_item.dart';
+import '../core/models/reference_item.dart';
 
 class ReferenceApiService {
   final String baseUrl;

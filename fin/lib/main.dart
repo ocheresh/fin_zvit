@@ -1,8 +1,43 @@
 import 'package:flutter/material.dart';
-import 'screens/main_menu_screen.dart';
+import 'package:provider/provider.dart';
+
+// --- Core / Data ---
+import 'core/api/api_service.dart';
+// якщо у тебе папка реально називається "reposetories" (з помилкою), лишай так:
+import 'core/reposetories/account_repository.dart';
+// якщо ВЖЕ перейменував на "repositories", імпорт має бути:
+// import 'core/repositories/account_repository.dart';
+import 'core/config/app_config.dart';
+
+// --- Features: Accounts ---
+import 'features/acoounts/data/accounts_remote_datasource.dart';
+// якщо виправив назву папки:
+// import 'features/accounts/data/accounts_remote_datasource.dart';
+import 'features/acoounts/mvi/account_viewmodel.dart';
+// виправлена папка:
+// import 'features/accounts/mvi/account_viewmodel.dart';
+
+// --- UI ---
+import 'screens/main_menu_screen.dart'; // твій MainMenuScreen
+// або якщо lies elsewhere: import '.../main_menu_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  // Для веб/десктопа:
+  final api = ApiService(AppConfig.apiBaseUrl);
+  // Для Android емулятора використовуй: ApiService('http://10.0.2.2:3001');
+
+  final remote = AccountsRemoteDataSource(api);
+  final repo = AccountRepository(remote);
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AccountViewModel(repo: repo)),
+        // додаватимеш інші VM тут (довідники, пропозиції тощо)
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -11,17 +46,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Фінансовий звіт',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.blue[700],
-          foregroundColor: Colors.white,
-        ),
-      ),
-      home: const MainMenuScreen(),
-      debugShowCheckedModeBanner: false,
+      title: 'FinZvit',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const MainMenuScreen(), // ← тепер головне меню стартове
     );
   }
 }

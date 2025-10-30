@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/reference_item.dart';
+import '../../core/models/reference_item.dart';
 import 'plan_assign_tab.dart';
 
 class PlanBudgetScreen extends StatefulWidget {

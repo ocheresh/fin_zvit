@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import '../models/reference_item.dart';
+import '../core/models/reference_item.dart';
 
 class ReferenceScreen extends StatefulWidget {
   const ReferenceScreen({super.key});

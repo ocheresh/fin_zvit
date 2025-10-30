@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'account_list_screen.dart';
+import '../features/acoounts/ui/account_list_page.dart';
 import 'reference_screen.dart';
-import 'prop/prop_selection_screen.dart';
+
 import 'plan/plan_selection_screen.dart';
 import 'prop/prop_budget_tabs_screen.dart';
 
@@ -19,16 +19,6 @@ class MainMenuScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon(Icons.account_balance, size: 80, color: Colors.blue[700]),
-            // SizedBox(height: 24),
-            // Text(
-            //   'Головне меню',
-            //   style: TextStyle(
-            //     fontSize: 28,
-            //     fontWeight: FontWeight.bold,
-            //     color: Colors.blue[700],
-            //   ),
-            // ),
             SizedBox(height: 40),
             _buildMenuButton(
               context,
@@ -67,7 +57,7 @@ class MainMenuScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => AccountListScreen()),
+                  MaterialPageRoute(builder: (context) => AccountListPage()),
                 );
               },
             ),
