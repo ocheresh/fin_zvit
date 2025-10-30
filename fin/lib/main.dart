@@ -1,39 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// --- Core / Data ---
 import 'core/api/api_service.dart';
-// якщо у тебе папка реально називається "reposetories" (з помилкою), лишай так:
 import 'core/reposetories/account_repository.dart';
-// якщо ВЖЕ перейменував на "repositories", імпорт має бути:
-// import 'core/repositories/account_repository.dart';
 import 'core/config/app_config.dart';
 
-// --- Features: Accounts ---
 import 'features/acoounts/data/accounts_remote_datasource.dart';
-// якщо виправив назву папки:
-// import 'features/accounts/data/accounts_remote_datasource.dart';
 import 'features/acoounts/mvi/account_viewmodel.dart';
-// виправлена папка:
-// import 'features/accounts/mvi/account_viewmodel.dart';
 
-// --- UI ---
-import 'screens/main_menu_screen.dart'; // твій MainMenuScreen
-// або якщо lies elsewhere: import '.../main_menu_screen.dart';
+import 'screens/main_menu_screen.dart';
+
+import 'core/reposetories/reference_repository.dart';
+import 'features/references/data/references_remote_datasource.dart';
+import 'features/references/mvi/reference_viewmodel.dart';
+
+// --- Signers ---
+
+import 'core/reposetories/signers_repository.dart';
+import 'features/signers/data/signers_remote_datasource.dart';
+import 'features/signers/mvi/signer_viewmodel.dart';
+
+import 'core/reposetories/reestrprop_repository.dart';
+import 'features/reestrprop/data/reestrprop_remote_datasource.dart';
+import 'features/reestrprop/mvi/reestrprop_viewmodel.dart';
 
 void main() {
-  // Для веб/десктопа:
   final api = ApiService(AppConfig.apiBaseUrl);
-  // Для Android емулятора використовуй: ApiService('http://10.0.2.2:3001');
 
-  final remote = AccountsRemoteDataSource(api);
-  final repo = AccountRepository(remote);
+  // Accounts: RemoteDS -> Repo -> VM
+  final accountsRemote = AccountsRemoteDataSource(api);
+  final accountRepo = AccountRepository(accountsRemote);
+
+  // References: RemoteDS -> Repo -> VM
+  final referencesRemote = ReferencesRemoteDataSource(api);
+  final referencesRepo = ReferenceRepository(remote: referencesRemote);
+
+  // Signers: RemoteDS -> Repo -> VM
+  final signersRemote = SignersRemoteDataSource(api);
+  final signersRepo = SignersRepository(signersRemote);
+
+  // ReestrProp: Repo(ApiService) -> RemoteDS(Repo) -> VM(DataSource)
+  final reestrPropRepo = ReestrPropRepository(api);
+  final reestrPropRemote = ReestrPropRemoteDataSource(reestrPropRepo);
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AccountViewModel(repo: repo)),
-        // додаватимеш інші VM тут (довідники, пропозиції тощо)
+        ChangeNotifierProvider(
+          create: (_) => AccountViewModel(repo: accountRepo),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReferenceViewModel(repo: referencesRepo),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SignerViewModel(repo: signersRepo),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReestrPropViewModel(repo: reestrPropRemote),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -48,7 +72,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'FinZvit',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const MainMenuScreen(), // ← тепер головне меню стартове
+      home: const MainMenuScreen(),
     );
   }
 }

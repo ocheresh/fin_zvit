@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class Breakpoints {
   final bool isSmall;
   final bool isMedium;

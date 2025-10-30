@@ -2,10 +2,6 @@ import 'reestr_prop/finance_table_page.dart';
 import 'package:flutter/material.dart';
 import 'rozrah_prop/proposal_calc_page.dart';
 import 'druk_prop/druk_propoz_page.dart';
-import '../../core/models/reference_item.dart';
-import 'package:fin/screens/prop/prop_plan_assign_tab.dart';
-import 'res_prop_plan_assign_tab.dart';
-import '../../services/reference_api_service.dart';
 
 class PropBudgetTabsScreen extends StatefulWidget {
   const PropBudgetTabsScreen({super.key});
@@ -50,7 +46,7 @@ class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
             Spacer(),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white10,
+                color: Colors.blue[900],
                 borderRadius: BorderRadius.circular(20.0),
               ),
               child: Row(
@@ -90,8 +86,8 @@ class _PropBudgetTabsScreenState extends State<PropBudgetTabsScreen>
         bottom: TabBar(
           controller: _tabController,
           // Текст і колір
-          labelColor: Colors.white, // колір активної вкладки
-          unselectedLabelColor: Colors.white70, // колір неактивних
+          labelColor: Colors.blue[900], // колір активної вкладки
+          unselectedLabelColor: Colors.blue[400], // колір неактивних
           labelStyle: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
