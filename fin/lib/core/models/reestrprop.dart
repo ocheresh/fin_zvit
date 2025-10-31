@@ -1,6 +1,7 @@
+// lib/core/models/reestrprop.dart
 class ReestrProp {
   final int id;
-  final int seqNo;
+  final int seqNo; // номер пропозиції; тепер = id
   final String kpkvId;
   final String fundId;
   final int month;
@@ -24,13 +25,15 @@ class ReestrProp {
   static String _s(dynamic v) => v == null ? '' : v.toString();
 
   factory ReestrProp.fromJson(Map<String, dynamic> j) => ReestrProp(
-    id: j['id'] as int,
-    seqNo: j['seq_no'] as int,
+    id: (j['id'] as num).toInt(),
+    seqNo: (j['seq_no'] ?? j['id']) is num
+        ? ((j['seq_no'] ?? j['id']) as num).toInt()
+        : int.tryParse('${j['seq_no'] ?? j['id']}') ?? 0,
     kpkvId: _s(j['kpkv_id']),
     fundId: _s(j['fund_id']),
     month: (j['month'] as num).toInt(),
-    signFirstId: _s(j['sign_first_id']), // ← без 'null'
-    signSecondId: _s(j['sign_second_id']), // ← без 'null'
+    signFirstId: _s(j['sign_first_id']),
+    signSecondId: _s(j['sign_second_id']),
     sentDfDate: j['sent_df_date'] == null
         ? null
         : DateTime.parse(j['sent_df_date']),
@@ -41,7 +44,7 @@ class ReestrProp {
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'seq_no': seqNo,
+    'seq_no': seqNo, // тримаємо співпадіння
     'kpkv_id': kpkvId,
     'fund_id': fundId,
     'month': month,

@@ -10,10 +10,13 @@ import '../../signers/mvi/signer_intent.dart';
 import 'package:fin/features/reestrprop/mvi/reestrprop_viewmodel.dart';
 import 'package:fin/features/reestrprop/mvi/reestrprop_intent.dart';
 
-import './view_helpers.dart';
+import './widgets/view_helpers.dart';
 import './widgets/filter_bar.dart';
 import './widgets/responsive_list.dart';
 import './widgets/reestr_prop_form.dart';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:universal_html/html.dart' as html;
 
 const String refKeyKpkv = 'КПКВ';
 const String refKeyFunds = 'Фонд';
@@ -34,6 +37,9 @@ class _ReestrPropListPageState extends State<ReestrPropListPage> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      html.document.title = 'Реєстр пропозицій | FinZvit';
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReestrPropViewModel>().dispatch(const RPLoad());
       final rv = context.read<ReferenceViewModel>();
@@ -117,8 +123,8 @@ class _ReestrPropListPageState extends State<ReestrPropListPage> {
             fundId: _filterFundId,
             month: _filterMonth,
             seqNo: _filterSeqNo,
-            searchText: _searchText,
-            onSearchChanged: (s) => setState(() => _searchText = s),
+            // searchText: _searchText,
+            // onSearchChanged: (s) => setState(() => _searchText = s),
             kpkvLabelOf: (id) => refName(kpkvMap, id),
             fundLabelOf: (id) => refName(fundMap, id),
             onChanged: (k, f, m, n) => setState(() {

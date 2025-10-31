@@ -7,6 +7,9 @@ import '../features/reestrprop/ui/reestrprop_list_page.dart';
 import 'plan/plan_selection_screen.dart';
 import 'prop/prop_budget_tabs_screen.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html;
+
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
 
@@ -47,15 +50,17 @@ class MainMenuScreen extends StatelessWidget {
                 _buildMenuButton(
                   context,
                   icon: Icons.rebase_edit,
-                  title: 'Реєстр пропозицій',
+                  title: 'Реєстрація пропозицій',
                   description: 'Нумерація, створення, редагування пропозицій',
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ReestrPropListPage(),
-                      ),
-                    );
+                    if (kIsWeb) {
+                      html.window.open(
+                        '/#/reestrprop',
+                        '_blank',
+                      ); // відкриє ReestrPropListPage у новій вкладці
+                    } else {
+                      Navigator.pushNamed(context, '/reestrprop');
+                    }
                   },
                 ),
                 _buildMenuButton(

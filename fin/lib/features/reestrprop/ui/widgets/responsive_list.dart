@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/models/reestrprop.dart';
 import '../../../../core/models/signer.dart';
 import '../../../signers/mvi/signer_viewmodel.dart';
-import '..//view_helpers.dart';
+import 'view_helpers.dart';
 
 const double _wideBp = 920;
 

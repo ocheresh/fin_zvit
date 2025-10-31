@@ -15,7 +15,6 @@ import 'features/references/data/references_remote_datasource.dart';
 import 'features/references/mvi/reference_viewmodel.dart';
 
 // --- Signers ---
-
 import 'core/reposetories/signers_repository.dart';
 import 'features/signers/data/signers_remote_datasource.dart';
 import 'features/signers/mvi/signer_viewmodel.dart';
@@ -23,6 +22,13 @@ import 'features/signers/mvi/signer_viewmodel.dart';
 import 'core/reposetories/reestrprop_repository.dart';
 import 'features/reestrprop/data/reestrprop_remote_datasource.dart';
 import 'features/reestrprop/mvi/reestrprop_viewmodel.dart';
+
+// ======= ДОДАНІ ІМПОРТИ ДЛЯ РОУТІВ (не змінюють існуючі) =======
+import 'features/reestrprop/ui/reestrprop_list_page.dart';
+import 'features/acoounts/ui/account_list_page.dart';
+import 'features/signers/ui/signers_registry_page.dart';
+import 'features/references/ui/reference_list_page.dart';
+// ===============================================================
 
 void main() {
   final api = ApiService(AppConfig.apiBaseUrl);
@@ -72,7 +78,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'FinZvit',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const MainMenuScreen(),
+
+      // 🔹 Маршрути, щоб відкривати екрани за URL: /#/reestrprop, /#/accounts, ...
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const MainMenuScreen(),
+        '/reestrprop': (context) => const ReestrPropListPage(),
+        '/accounts': (context) => const AccountListPage(),
+        '/signers': (context) => const SignersRegistryPage(),
+        '/references': (context) => const ReferenceListPage(),
+      },
     );
   }
 }

@@ -9,7 +9,7 @@ import '../../../references/mvi/reference_viewmodel.dart';
 import '../../../signers/mvi/signer_viewmodel.dart';
 
 import 'common_inputs.dart';
-import '../view_helpers.dart';
+import 'view_helpers.dart';
 
 const String refKeyKpkv = 'КПКВ';
 const String refKeyFunds = 'Фонд';

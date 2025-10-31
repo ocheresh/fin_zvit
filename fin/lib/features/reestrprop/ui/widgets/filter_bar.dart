@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../view_helpers.dart';
+import 'view_helpers.dart';
+import 'searchable_dropdown.dart';
 
 const double _wideBp = 920;
 
@@ -13,10 +14,6 @@ class FilterBar extends StatelessWidget {
   final String? fundId;
   final int? month;
   final int? seqNo;
-
-  // 🔎 нове: пошук
-  final String searchText;
-  final ValueChanged<String> onSearchChanged;
 
   final String Function(String id) kpkvLabelOf;
   final String Function(String id) fundLabelOf;
@@ -35,8 +32,6 @@ class FilterBar extends StatelessWidget {
     required this.fundId,
     required this.month,
     required this.seqNo,
-    required this.searchText,
-    required this.onSearchChanged,
     required this.kpkvLabelOf,
     required this.fundLabelOf,
     required this.onChanged,
@@ -45,87 +40,73 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final kpkv = Expanded(
-      child: DropdownButtonFormField<String>(
-        isExpanded: true,
+    // items із «Усі» + варіанти (пошук працює по тексту child)
+    final kpkvItems = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('Усі')),
+      ...kpkvOptions.map(
+        (id) =>
+            DropdownMenuItem<String?>(value: id, child: Text(kpkvLabelOf(id))),
+      ),
+    ];
+    final fundItems = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('Усі')),
+      ...fundOptions.map(
+        (id) =>
+            DropdownMenuItem<String?>(value: id, child: Text(fundLabelOf(id))),
+      ),
+    ];
+    final monthItems = <DropdownMenuItem<int?>>[
+      const DropdownMenuItem<int?>(value: null, child: Text('Усі')),
+      ...monthOptions.map(
+        (m) => DropdownMenuItem<int?>(value: m, child: Text(monthsFull[m - 1])),
+      ),
+    ];
+    final seqItems = <DropdownMenuItem<int?>>[
+      const DropdownMenuItem<int?>(value: null, child: Text('Усі')),
+      ...seqOptions.map(
+        (n) => DropdownMenuItem<int?>(value: n, child: Text('$n')),
+      ),
+    ];
+
+    final kpkvDd = Expanded(
+      child: SearchableDropdown<String?>(
+        label: 'КПКВ',
+        searchHint: 'Пошук КПКВ…',
         value: kpkvId,
-        decoration: const InputDecoration(labelText: 'КПКВ'),
-        items: [
-          const DropdownMenuItem<String>(value: null, child: Text('Усі')),
-          ...kpkvOptions.map(
-            (id) => DropdownMenuItem(value: id, child: Text(kpkvLabelOf(id))),
-          ),
-        ],
+        items: kpkvItems,
         onChanged: (v) => onChanged(v, fundId, month, seqNo),
       ),
     );
 
-    final fund = Expanded(
-      child: DropdownButtonFormField<String>(
-        isExpanded: true,
+    final fundDd = Expanded(
+      child: SearchableDropdown<String?>(
+        label: 'Фонд',
+        searchHint: 'Пошук фонду…',
         value: fundId,
-        decoration: const InputDecoration(labelText: 'Фонд'),
-        items: [
-          const DropdownMenuItem<String>(value: null, child: Text('Усі')),
-          ...fundOptions.map(
-            (id) => DropdownMenuItem(value: id, child: Text(fundLabelOf(id))),
-          ),
-        ],
+        items: fundItems,
         onChanged: (v) => onChanged(kpkvId, v, month, seqNo),
       ),
     );
 
     final monthDd = SizedBox(
       width: 220,
-      child: DropdownButtonFormField<int>(
-        isExpanded: true,
+      child: SearchableDropdown<int?>(
+        label: 'Місяць',
+        searchHint: 'Введіть назву/номер…',
         value: month,
-        decoration: const InputDecoration(labelText: 'Місяць'),
-        items: [
-          const DropdownMenuItem<int>(value: null, child: Text('Усі')),
-          ...monthOptions.map(
-            (m) => DropdownMenuItem(value: m, child: Text(monthsFull[m - 1])),
-          ),
-        ],
+        items: monthItems,
         onChanged: (v) => onChanged(kpkvId, fundId, v, seqNo),
       ),
     );
 
-    final seq = SizedBox(
+    final seqDd = SizedBox(
       width: 200,
-      child: DropdownButtonFormField<int>(
-        isExpanded: true,
+      child: SearchableDropdown<int?>(
+        label: '№ пропозиції',
+        searchHint: 'Введіть номер…',
         value: seqNo,
-        decoration: const InputDecoration(labelText: '№ пропозиції'),
-        items: [
-          const DropdownMenuItem<int>(value: null, child: Text('Усі')),
-          ...seqOptions.map(
-            (n) => DropdownMenuItem(value: n, child: Text('$n')),
-          ),
-        ],
+        items: seqItems,
         onChanged: (v) => onChanged(kpkvId, fundId, month, v),
-      ),
-    );
-
-    // 🔎 Поле пошуку
-    final search = Expanded(
-      child: TextField(
-        decoration: InputDecoration(
-          labelText: 'Пошук',
-          hintText: '№, КПКВ, Фонд, місяць, підписант…',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: searchText.isEmpty
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => onSearchChanged(''),
-                ),
-        ),
-        onChanged: onSearchChanged,
-        controller: TextEditingController(text: searchText)
-          ..selection = TextSelection.fromPosition(
-            TextPosition(offset: searchText.length),
-          ),
       ),
     );
 
@@ -145,36 +126,30 @@ class FilterBar extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, c) {
             final isWide = c.maxWidth >= _wideBp;
-
             if (isWide) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  search,
+                  kpkvDd,
                   const SizedBox(width: 12),
-                  kpkv,
-                  const SizedBox(width: 12),
-                  fund,
+                  fundDd,
                   const SizedBox(width: 12),
                   monthDd,
                   const SizedBox(width: 12),
-                  seq,
+                  seqDd,
                   const SizedBox(width: 12),
                   clearBtn,
                 ],
               );
             }
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                search,
-                const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: kpkv),
+                    Expanded(child: kpkvDd),
                     const SizedBox(width: 12),
-                    Expanded(child: fund),
+                    Expanded(child: fundDd),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -182,7 +157,7 @@ class FilterBar extends StatelessWidget {
                   children: [
                     Expanded(child: monthDd),
                     const SizedBox(width: 12),
-                    Expanded(child: seq),
+                    Expanded(child: seqDd),
                   ],
                 ),
                 const SizedBox(height: 8),
